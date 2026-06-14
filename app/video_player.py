@@ -12,6 +12,8 @@ from PIL import Image
 
 from video_thumbs import extract_video_thumbnail, is_video_file
 
+from theme import INPUT_BG
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -32,7 +34,7 @@ class InlineVideoPlayer(ctk.CTkFrame):
     """Play/pause video with scrub bar in a CTk frame."""
 
     def __init__(self, parent, **kwargs):
-        super().__init__(parent, fg_color="#0f0f18", **kwargs)
+        super().__init__(parent, fg_color=INPUT_BG, **kwargs)
         self._path: Optional[str] = None
         self._cap = None
         self._playing = False

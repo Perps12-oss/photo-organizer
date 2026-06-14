@@ -16,7 +16,11 @@ from app_settings import (
     AppSettings, SCAN_DEPTH_OPTIONS, SETTINGS_DIR, load_app_settings, save_app_settings,
 )
 from inbox_watcher import WatcherSettings, load_settings, save_settings, is_windows_autostart_enabled, set_windows_autostart
-from theme import APPEARANCE_MODES, APP_ACCENT, APP_ACCENT_HOVER, APP_BORDER, APP_TEXT_MUTED, GALLERY_SORT_OPTIONS, PAD_MD
+from design_system import ModernSlider, PageHeader, PrimaryButton, SecondaryButton, StyledCheckBox, StyledOptionMenu
+from theme import (
+    APPEARANCE_MODES, APP_BORDER, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN, GALLERY_SORT_OPTIONS,
+    INPUT_BG, PAD_MD, SECTION_GAP, TEXT_SECONDARY,
+)
 from keyboard_bindings import ACTION_LABELS, DEFAULT_BINDINGS, shortcuts_reference_text
 from ui_components import SettingsSection
 
@@ -81,17 +85,12 @@ class SettingsView(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=24, weight="bold")).grid(
-            row=0, column=0, padx=4, pady=(0, 4), sticky="w",
-        )
-        ctk.CTkLabel(
-            self,
-            text="Appearance, gallery behavior, sidecar mapping, and inbox watcher defaults.",
-            font=ctk.CTkFont(size=13), text_color=APP_TEXT_MUTED, wraplength=900, justify="left",
-        ).grid(row=0, column=0, padx=4, pady=(32, 12), sticky="w")
+        PageHeader(
+            self, "Settings", "Appearance, gallery behavior, sidecar mapping, and inbox watcher defaults.",
+        ).grid(row=0, column=0, sticky="ew", padx=CONTENT_MARGIN, pady=(CONTENT_MARGIN, SECTION_GAP))
 
         scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        scroll.grid(row=1, column=0, sticky="nsew", padx=0, pady=(0, 8))
+        scroll.grid(row=1, column=0, sticky="nsew", padx=CONTENT_MARGIN, pady=(0, 8))
         scroll.grid_columnconfigure(0, weight=1)
 
         self._build_appearance_section(scroll)
@@ -104,22 +103,14 @@ class SettingsView(ctk.CTkFrame):
         self._build_shortcuts_section(scroll)
 
         footer = ctk.CTkFrame(self, fg_color="transparent")
-        footer.grid(row=2, column=0, sticky="ew", pady=(8, 0))
-        ctk.CTkButton(
-            footer, text="Save all settings", width=160, height=40,
-            fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
-            command=self.save_all,
-        ).pack(side="left")
-        ctk.CTkButton(
-            footer, text="Reset to defaults", width=140, height=40,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER,
-            command=self.reset_defaults,
-        ).pack(side="left", padx=(12, 0))
-        ctk.CTkButton(
-            footer, text="Open config folder", width=150, height=40,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER,
-            command=self._open_config_folder,
-        ).pack(side="left", padx=(12, 0))
+        footer.grid(row=2, column=0, sticky="ew", padx=CONTENT_MARGIN, pady=(8, CONTENT_MARGIN))
+        PrimaryButton(footer, text="Save all settings", width=160, command=self.save_all).pack(side="left")
+        SecondaryButton(footer, text="Reset to defaults", width=140, command=self.reset_defaults).pack(
+            side="left", padx=(12, 0),
+        )
+        SecondaryButton(footer, text="Open config folder", width=150, command=self._open_config_folder).pack(
+            side="left", padx=(12, 0),
+        )
 
     def _build_appearance_section(self, parent):
         section = SettingsSection(
@@ -163,7 +154,7 @@ class SettingsView(ctk.CTkFrame):
         row2 = ctk.CTkFrame(section.body, fg_color="transparent")
         row2.pack(fill="x", pady=4)
         ctk.CTkLabel(row2, text="Auto-save delay", width=140, anchor="w").pack(side="left")
-        ctk.CTkSlider(
+        ModernSlider(
             row2, from_=300, to=2000, number_of_steps=17,
             variable=self.auto_save_delay_var, width=220,
             command=self._update_delay_label,
@@ -215,7 +206,7 @@ class SettingsView(ctk.CTkFrame):
         row1 = ctk.CTkFrame(section.body, fg_color="transparent")
         row1.pack(fill="x", pady=4)
         ctk.CTkLabel(row1, text="Poll interval", width=140, anchor="w").pack(side="left")
-        ctk.CTkSlider(
+        ModernSlider(
             row1, from_=1, to=10, number_of_steps=9,
             variable=self.watcher_poll_var, width=220,
             command=self._update_poll_label,
@@ -277,7 +268,7 @@ class SettingsView(ctk.CTkFrame):
         row3 = ctk.CTkFrame(section.body, fg_color="transparent")
         row3.pack(fill="x", pady=4)
         ctk.CTkLabel(row3, text="Only files newer than", width=140, anchor="w").pack(side="left")
-        ctk.CTkSlider(row3, from_=7, to=90, number_of_steps=83, variable=self.idle_scan_days_var, width=180).pack(
+        ModernSlider(row3, from_=7, to=90, number_of_steps=83, variable=self.idle_scan_days_var, width=180).pack(
             side="left", padx=(0, 8),
         )
         self._idle_days_label = ctk.CTkLabel(row3, text=f"{int(self.idle_scan_days_var.get())} days", width=60, anchor="w")
@@ -287,7 +278,7 @@ class SettingsView(ctk.CTkFrame):
         row4 = ctk.CTkFrame(section.body, fg_color="transparent")
         row4.pack(fill="x", pady=4)
         ctk.CTkLabel(row4, text="Idle after", width=140, anchor="w").pack(side="left")
-        ctk.CTkSlider(row4, from_=2, to=30, number_of_steps=28, variable=self.idle_idle_min_var, width=180).pack(
+        ModernSlider(row4, from_=2, to=30, number_of_steps=28, variable=self.idle_idle_min_var, width=180).pack(
             side="left", padx=(0, 8),
         )
         self._idle_min_label = ctk.CTkLabel(row4, text=f"{int(self.idle_idle_min_var.get())} min", width=60, anchor="w")
@@ -297,7 +288,7 @@ class SettingsView(ctk.CTkFrame):
         row5 = ctk.CTkFrame(section.body, fg_color="transparent")
         row5.pack(fill="x", pady=4)
         ctk.CTkLabel(row5, text="Cooldown between scans", width=140, anchor="w").pack(side="left")
-        ctk.CTkSlider(row5, from_=1, to=24, number_of_steps=23, variable=self.idle_cooldown_var, width=180).pack(
+        ModernSlider(row5, from_=1, to=24, number_of_steps=23, variable=self.idle_cooldown_var, width=180).pack(
             side="left", padx=(0, 8),
         )
         self._idle_cd_label = ctk.CTkLabel(row5, text=f"{int(self.idle_cooldown_var.get())} h", width=60, anchor="w")
@@ -307,7 +298,7 @@ class SettingsView(ctk.CTkFrame):
         row6 = ctk.CTkFrame(section.body, fg_color="transparent")
         row6.pack(fill="x", pady=4)
         ctk.CTkLabel(row6, text="Max CPU usage", width=140, anchor="w").pack(side="left")
-        ctk.CTkSlider(row6, from_=10, to=100, number_of_steps=9, variable=self.idle_cpu_limit_var, width=180).pack(
+        ModernSlider(row6, from_=10, to=100, number_of_steps=9, variable=self.idle_cpu_limit_var, width=180).pack(
             side="left", padx=(0, 8),
         )
         self._idle_cpu_label = ctk.CTkLabel(row6, text=f"{int(self.idle_cpu_limit_var.get())}%", width=60, anchor="w")
@@ -471,7 +462,7 @@ class SettingsView(ctk.CTkFrame):
         ctk.CTkLabel(header, text="Action", width=220, anchor="w", font=ctk.CTkFont(weight="bold")).pack(side="left")
         ctk.CTkLabel(header, text="Binding", anchor="w", font=ctk.CTkFont(weight="bold")).pack(side="left")
 
-        table = ctk.CTkScrollableFrame(section.body, height=220, fg_color="#0f0f18")
+        table = ctk.CTkScrollableFrame(section.body, height=220, fg_color=INPUT_BG)
         table.pack(fill="x", pady=4)
 
         overrides = dict(self._app.keyboard_shortcuts or {})
@@ -496,7 +487,7 @@ class SettingsView(ctk.CTkFrame):
         ).pack(anchor="w", pady=(6, 4))
 
         ref = ctk.CTkTextbox(
-            section.body, height=120, font=("Consolas", 10), fg_color="#0f0f18",
+            section.body, height=120, font=("Consolas", 10), fg_color=INPUT_BG,
             text_color="#aabbcc", wrap="word", activate_scrollbars=True,
         )
         ref.pack(fill="x", pady=4)
@@ -568,9 +559,10 @@ class SettingsView(ctk.CTkFrame):
     def _apply_custom_accent(self, accent: str) -> None:
         import theme
         if accent and accent.startswith("#"):
+            theme.ACCENT = accent
             theme.APP_ACCENT = accent
             theme.APP_PRIMARY = accent
-            theme.NEON_CYAN = accent
+            theme.ACCENT_HOVER = accent
             theme.APP_ACCENT_HOVER = accent
             theme.APP_PRIMARY_HOVER = accent
 

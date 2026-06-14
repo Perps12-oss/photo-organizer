@@ -9,7 +9,8 @@ from inbox_watcher import (
     load_settings, save_settings, inbox_path,
     set_windows_autostart, is_windows_autostart_enabled,
 )
-from theme import APP_ACCENT, APP_BORDER, APP_CARD, APP_TEXT, APP_TEXT_MUTED, FONT_MONO_SM
+from design_system import ModernSlider, PageHeader, SecondaryButton
+from theme import APP_ACCENT, APP_BORDER, APP_CARD, APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_GAP, SIDEBAR_TILE_ACTIVE
 from ui_components import INBOX_SHORTCUTS
 from views.helpers import truncate_middle
 from i18n import t
@@ -41,22 +42,18 @@ class InboxWatcherView(ctk.CTkFrame):
         self.run_at_login_var = ctk.BooleanVar(value=is_windows_autostart_enabled())
         self.minimize_tray_var = ctk.BooleanVar(value=settings.minimize_to_tray)
         self._pulse_job = None
-        self._status_card_base = "#252540"
+        self._status_card_base = INPUT_BG
         self._inbox_key_bindings: list = []
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(1, weight=1)
 
-        ctk.CTkLabel(self, text=t("inbox.title"), font=ctk.CTkFont(size=24, weight="bold")).grid(
-            row=0, column=0, padx=4, pady=(0, 6), sticky="w")
-        ctk.CTkLabel(
-            self,
-            text=t("inbox.subtitle"),
-            text_color=APP_TEXT_MUTED, font=ctk.CTkFont(size=13), wraplength=900, justify="left",
-        ).grid(row=1, column=0, sticky="w", pady=(0, 12))
+        PageHeader(self, t("inbox.title"), t("inbox.subtitle")).grid(
+            row=0, column=0, sticky="ew", padx=CONTENT_MARGIN, pady=(CONTENT_MARGIN, SECTION_GAP),
+        )
 
         body = ctk.CTkFrame(self, fg_color="transparent")
-        body.grid(row=2, column=0, sticky="nsew")
+        body.grid(row=1, column=0, sticky="nsew", padx=CONTENT_MARGIN, pady=(0, CONTENT_MARGIN))
         body.grid_columnconfigure(0, weight=1)
         body.grid_columnconfigure(1, weight=1)
         body.grid_rowconfigure(0, weight=1)
@@ -86,7 +83,7 @@ class InboxWatcherView(ctk.CTkFrame):
         poll = ctk.CTkFrame(left, fg_color="transparent")
         poll.pack(fill="x", padx=14, pady=(8, 4))
         ctk.CTkLabel(poll, text="Poll every", width=100, anchor="w").pack(side="left")
-        ctk.CTkSlider(poll, from_=1, to=10, number_of_steps=9, variable=self.poll_var, width=180).pack(side="left", padx=8)
+        ModernSlider(poll, from_=1, to=10, number_of_steps=9, variable=self.poll_var, width=180).pack(side="left", padx=8)
         self.poll_label = ctk.CTkLabel(poll, text=f"{settings.poll_seconds:.0f}s", width=40)
         self.poll_label.pack(side="left")
         self.poll_var.trace_add("write", self._update_poll_label)
@@ -154,14 +151,14 @@ class InboxWatcherView(ctk.CTkFrame):
         self.watch_path_label.grid(row=2, column=0, padx=14, pady=(0, 8), sticky="ew")
 
         self.log_box = ctk.CTkTextbox(
-            right, font=FONT_MONO_SM, fg_color="#0f0f18", text_color="#aabbcc", wrap="word",
+            right, font=FONT_MONO_SM, fg_color=INPUT_BG, text_color=APP_TEXT_MUTED, wrap="word",
         )
         self.log_box.grid(row=3, column=0, padx=14, pady=(0, 14), sticky="nsew")
         self.log_box.insert("1.0", "Start the watcher to begin monitoring.\n")
         self.log_box.configure(state="disabled")
 
         footer = ctk.CTkFrame(self, fg_color="transparent")
-        footer.grid(row=3, column=0, pady=(12, 0))
+        footer.grid(row=2, column=0, padx=CONTENT_MARGIN, pady=(12, CONTENT_MARGIN))
         self.processed_label = ctk.CTkLabel(footer, text="Files processed this session: 0", text_color=APP_TEXT_MUTED)
         self.processed_label.pack(side="left", padx=(0, 20))
         ctk.CTkButton(footer, text="Save settings", command=self.save_settings_only, width=120).pack(side="left", padx=4)
@@ -171,7 +168,7 @@ class InboxWatcherView(ctk.CTkFrame):
         ).pack(side="left", padx=4)
         self.watch_btn = ctk.CTkButton(
             footer, text="Start Watcher", width=160, height=40,
-            fg_color="#198754", hover_color="#13653f", command=self.toggle_watcher,
+            fg_color=APP_SUCCESS, hover_color=APP_SUCCESS_HOVER, command=self.toggle_watcher,
         )
         self.watch_btn.pack(side="left", padx=(12, 0))
 

@@ -67,7 +67,7 @@ from gps_utils import open_in_browser, osm_url
 from takeout_import import discover_takeout_albums, find_takeout_sidecar, import_takeout_album
 from theme import (
     APP_ACCENT, APP_ACCENT_HOVER, APP_BORDER, APP_CARD, APP_SECONDARY, APP_SECONDARY_HOVER,
-    APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT_MUTED, FONT_MONO_SM, GALLERY_SORT_OPTIONS,
+    APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT_MUTED, FONT_MONO_SM, GALLERY_SORT_OPTIONS, INPUT_BG,
 )
 from ui_components import EmptyState, GALLERY_SHORTCUTS
 from i18n import t
@@ -224,7 +224,7 @@ class SidecarMergeDialog(ctk.CTkToplevel):
                 command=on_mapping,
             ).pack(side="right")
 
-        self.list_frame = ctk.CTkScrollableFrame(self, fg_color="#0f0f18", height=320)
+        self.list_frame = ctk.CTkScrollableFrame(self, fg_color=INPUT_BG, height=320)
         self.list_frame.pack(fill="both", expand=True, padx=16, pady=4)
 
         for image_path, sidecar_path in pairs:
@@ -489,7 +489,7 @@ class MediaGalleryView(ctk.CTkFrame):
 
         ctk.CTkLabel(gallery_card, text="Photos & videos", font=ctk.CTkFont(size=14, weight="bold")).grid(
             row=0, column=0, padx=14, pady=(12, 6), sticky="w")
-        self.gallery_scroll = ctk.CTkScrollableFrame(gallery_card, fg_color="#0f0f18")
+        self.gallery_scroll = ctk.CTkScrollableFrame(gallery_card, fg_color=INPUT_BG)
         self.gallery_scroll.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="nsew")
         self.gallery_grid = ctk.CTkFrame(self.gallery_scroll, fg_color="transparent")
         self.gallery_grid.pack(fill="x", expand=True)
@@ -613,7 +613,7 @@ class MediaGalleryView(ctk.CTkFrame):
             row=0, column=5, padx=(4, 14), pady=12)
 
         self.rename_preview = ctk.CTkTextbox(
-            bulk, height=70, font=FONT_MONO_SM, fg_color="#0f0f18", text_color="#aabbcc",
+            bulk, height=70, font=FONT_MONO_SM, fg_color=INPUT_BG, text_color=APP_TEXT_MUTED,
         )
         self.rename_preview.grid(row=1, column=0, columnspan=6, padx=14, pady=(0, 12), sticky="ew")
         self.rename_preview.insert("1.0", "Pattern: YYYYMMDD_EventName_001.jpg")

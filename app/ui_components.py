@@ -7,7 +7,11 @@ from typing import Callable, Optional
 
 import customtkinter as ctk
 
+from assets import load_icon
+from design_system import NAV_ICON_MAP, ElevatedCard
 from theme import (
+    ACCENT,
+    ACCENT_HOVER,
     ANIM_FADE_MS,
     ANIM_VIEW_MS,
     APP_ACCENT,
@@ -17,29 +21,36 @@ from theme import (
     APP_PRIMARY,
     APP_PRIMARY_TEXT,
     APP_SECONDARY,
-    APP_SIDEBAR,
     APP_SURFACE,
     APP_TEXT,
     APP_TEXT_MUTED,
+    BODY_FONT,
     BTN_HOVER,
-    BTN_INACTIVE,
     BTN_INACTIVE_HOVER,
-    CARD_RADIUS,
+    CAPTION_FONT,
+    CARD_PADDING,
     FONT_BODY,
     FONT_HEADING,
+    FONT_LOGO,
     FONT_MONO_SM,
     FONT_SMALL,
     PAD_LG,
     PAD_MD,
     PAD_SM,
+    SECTION_FONT,
+    SIDEBAR_TILE_ACTIVE,
+    STATUS_BAR_BG,
     STATUS_IDLE,
     STATUS_INFO,
     STATUS_JOB,
+    SUCCESS,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    WINDOW_BG,
     toast_colors,
 )
 
-# Plain-text nav — no emoji (consistent across Windows versions)
-NAV_ICONS: dict[str, str] = {}
+NAV_ICONS: dict[str, str] = NAV_ICON_MAP
 
 GLOBAL_SHORTCUTS = (
     "Navigation\n"
@@ -148,81 +159,147 @@ class EmptyState(ctk.CTkFrame):
             self._action_btn.pack_forget()
 
 
-class SettingsSection(ctk.CTkFrame):
+class SettingsSection(ElevatedCard):
     """Card section for the Settings page."""
 
     def __init__(self, parent, title: str, subtitle: str = "", **kwargs):
-        super().__init__(
-            parent, fg_color=APP_CARD, corner_radius=CARD_RADIUS,
-            border_width=1, border_color=APP_BORDER, **kwargs,
-        )
-        header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=PAD_LG, pady=(PAD_LG, PAD_SM))
-        ctk.CTkLabel(header, text=title, font=FONT_HEADING, anchor="w").pack(anchor="w")
+        super().__init__(parent, **kwargs)
+        header = ctk.CTkFrame(self.body, fg_color="transparent")
+        header.pack(fill="x", pady=(0, PAD_SM))
+        ctk.CTkLabel(header, text=title, font=SECTION_FONT, anchor="w", text_color=TEXT_PRIMARY).pack(anchor="w")
         if subtitle:
             ctk.CTkLabel(
-                header, text=subtitle, font=FONT_SMALL, text_color=APP_TEXT_MUTED,
+                header, text=subtitle, font=CAPTION_FONT, text_color=TEXT_SECONDARY,
                 anchor="w", justify="left", wraplength=700,
             ).pack(anchor="w", pady=(4, 0))
-        self.body = ctk.CTkFrame(self, fg_color="transparent")
-        self.body.pack(fill="x", padx=PAD_LG, pady=(0, PAD_LG))
 
 
 class SidebarNavButton(ctk.CTkFrame):
-    """Sidebar item with left accent strip and icon label."""
+    """Sidebar item with left accent strip, icon, and label."""
 
     def __init__(self, parent, text: str, nav_key: str, command: Callable[[], None], **kwargs):
         super().__init__(parent, fg_color="transparent", **kwargs)
         self.nav_key = nav_key
         self._command = command
+        self._active = False
 
         self.indicator = ctk.CTkFrame(self, width=4, corner_radius=2, fg_color="transparent")
-        self.indicator.pack(side="left", fill="y", padx=(0, 4))
+        self.indicator.pack(side="left", fill="y", padx=(0, 6))
+
+        icon_name = NAV_ICON_MAP.get(nav_key, "folder")
+        self._icon = load_icon(icon_name, 20, TEXT_SECONDARY)
+        self._icon_active = load_icon(icon_name, 20, ACCENT)
 
         self.button = ctk.CTkButton(
             self,
             text=f"  {text}",
             anchor="w",
-            height=40,
-            corner_radius=8,
-            font=ctk.CTkFont(size=13),
+            height=42,
+            corner_radius=10,
+            font=BODY_FONT,
             fg_color="transparent",
-            hover_color=BTN_HOVER,
-            text_color=APP_TEXT,
+            hover_color=SIDEBAR_TILE_ACTIVE,
+            text_color=TEXT_SECONDARY,
+            image=self._icon,
+            compound="left",
             command=command,
         )
         self.button.pack(side="left", fill="x", expand=True)
 
     def set_active(self, active: bool):
+        self._active = active
         if active:
-            self.indicator.configure(fg_color=APP_ACCENT)
+            self.indicator.configure(fg_color=ACCENT)
             self.button.configure(
-                fg_color=BTN_HOVER,
-                hover_color=BTN_HOVER,
-                text_color=APP_TEXT,
+                fg_color=SIDEBAR_TILE_ACTIVE,
+                hover_color=SIDEBAR_TILE_ACTIVE,
+                text_color=TEXT_PRIMARY,
+                image=self._icon_active,
             )
         else:
             self.indicator.configure(fg_color="transparent")
             self.button.configure(
                 fg_color="transparent",
                 hover_color=BTN_INACTIVE_HOVER,
-                text_color=APP_TEXT,
+                text_color=TEXT_SECONDARY,
+                image=self._icon,
             )
 
     def configure_state(self, state: str):
         self.button.configure(state=state)
 
 
+class ModernSidebar(ctk.CTkFrame):
+    """App sidebar with branding, navigation, and footer status."""
+
+    def __init__(self, parent, nav_specs: list[tuple[str, str, Callable]], width: int, **kwargs):
+        super().__init__(parent, width=width, corner_radius=0, fg_color=WINDOW_BG, **kwargs)
+        self.grid_propagate(False)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(20, weight=1)
+
+        logo_icon = load_icon("folder", 24, ACCENT)
+        brand = ctk.CTkFrame(self, fg_color="transparent")
+        brand.grid(row=0, column=0, sticky="ew", padx=20, pady=(24, 4))
+        if logo_icon:
+            ctk.CTkLabel(brand, text="", image=logo_icon).pack(side="left", padx=(0, 10))
+        titles = ctk.CTkFrame(brand, fg_color="transparent")
+        titles.pack(side="left", fill="x", expand=True)
+        ctk.CTkLabel(titles, text="Photo Organizer", font=FONT_LOGO, text_color=TEXT_PRIMARY, anchor="w").pack(
+            anchor="w",
+        )
+        ctk.CTkLabel(
+            titles, text="Smart media organizer", font=CAPTION_FONT, text_color=TEXT_SECONDARY, anchor="w",
+        ).pack(anchor="w")
+
+        ctk.CTkLabel(
+            self, text="NAVIGATION", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
+        ).grid(row=1, column=0, padx=20, pady=(16, 8), sticky="w")
+
+        self.nav_buttons: dict[str, SidebarNavButton] = {}
+        for row_idx, (key, label, cmd) in enumerate(nav_specs, start=2):
+            nav_btn = SidebarNavButton(self, label, key, cmd)
+            nav_btn.grid(row=row_idx, column=0, padx=12, pady=2, sticky="ew")
+            self.nav_buttons[key] = nav_btn
+
+        footer = ctk.CTkFrame(self, fg_color="transparent")
+        footer.grid(row=21, column=0, sticky="sw", padx=20, pady=(0, 16))
+        self.footer_dot = ctk.CTkLabel(footer, text="●", font=CAPTION_FONT, text_color=SUCCESS)
+        self.footer_dot.pack(side="left")
+        self.footer_label = ctk.CTkLabel(
+            footer, text="Ready", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
+        )
+        self.footer_label.pack(side="left", padx=(6, 0))
+
+    def set_footer_status(self, text: str, scanning: bool = False):
+        self.footer_label.configure(text=text)
+        self.footer_dot.configure(text_color=ACCENT if scanning else SUCCESS)
+
+    def highlight(self, key: str):
+        for nav_key, btn in self.nav_buttons.items():
+            btn.set_active(nav_key == key)
+
+
 class StatusBar(ctk.CTkFrame):
     """Global footer status strip."""
 
-    def __init__(self, parent, **kwargs):
-        super().__init__(parent, height=30, corner_radius=0, fg_color=APP_SIDEBAR, **kwargs)
+    def __init__(self, parent, version: str = "1.2.0", **kwargs):
+        super().__init__(parent, height=28, corner_radius=0, fg_color=STATUS_BAR_BG, **kwargs)
         self.grid_propagate(False)
+        left = ctk.CTkFrame(self, fg_color="transparent")
+        left.pack(side="left", fill="y", padx=16)
+        self.dot = ctk.CTkLabel(left, text="●", font=CAPTION_FONT, text_color=SUCCESS)
+        self.dot.pack(side="left")
         self.label = ctk.CTkLabel(
-            self, text="Ready", anchor="w", font=FONT_BODY, text_color=APP_TEXT_MUTED,
+            left, text="Ready", anchor="w", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
         )
-        self.label.pack(side="left", padx=12, pady=4)
+        self.label.pack(side="left", padx=(6, 0))
+        ctk.CTkLabel(
+            self, text=f"Version {version}", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
+        ).pack(side="right", padx=16)
+
+    def set_scanning(self, scanning: bool):
+        self.dot.configure(text_color=ACCENT if scanning else SUCCESS)
 
 
 def animate_view_enter(root: ctk.CTk, status_bar: Optional["StatusBar"] = None):
@@ -230,7 +307,7 @@ def animate_view_enter(root: ctk.CTk, status_bar: Optional["StatusBar"] = None):
     if not status_bar:
         return
     original = status_bar.cget("fg_color")
-    status_bar.configure(fg_color="#1a3a32")
+    status_bar.configure(fg_color=SIDEBAR_TILE_ACTIVE)
     root.after(ANIM_VIEW_MS, lambda: status_bar.configure(fg_color=original))
 
 
@@ -599,6 +676,7 @@ __all__ = [
     "INBOX_SHORTCUTS",
     "NAV_ICONS",
     "ORGANIZER_SHORTCUTS",
+    "ModernSidebar",
     "SidebarNavButton",
     "StatusBar",
     "ToastManager",

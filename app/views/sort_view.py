@@ -13,7 +13,8 @@ from operation_journal import OperationJournal
 from inbox_watcher import load_settings
 from app_settings import load_app_settings, save_app_settings
 from media_viewer import load_oriented_image, pil_to_ctk_image
-from theme import APP_BORDER, APP_CARD, APP_TEXT_MUTED, FONT_MONO_SM
+from design_system import PageHeader
+from theme import APP_BORDER, APP_CARD, APP_TEXT, APP_TEXT_MUTED, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_GAP, SIDEBAR_TILE_ACTIVE, TEXT_SECONDARY
 from ui_components import ORGANIZER_SHORTCUTS
 from views.helpers import truncate_middle
 from i18n import t
@@ -57,20 +58,14 @@ class SortView(ctk.CTkFrame):
         self.filename_template_var = ctk.StringVar(value=_app.filename_template)
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(2, weight=1)
 
-        title = ctk.CTkLabel(self, text=t("organizer.title"), font=ctk.CTkFont(size=24, weight="bold"))
-        title.grid(row=0, column=0, padx=20, pady=(20, 6), sticky="w")
-
-        desc = ctk.CTkLabel(
-            self,
-            text=t("organizer.subtitle"),
-            text_color=APP_TEXT_MUTED, font=ctk.CTkFont(size=13), wraplength=900, justify="left",
+        PageHeader(self, t("organizer.title"), t("organizer.subtitle")).grid(
+            row=0, column=0, sticky="ew", padx=CONTENT_MARGIN, pady=(CONTENT_MARGIN, SECTION_GAP),
         )
-        desc.grid(row=1, column=0, padx=20, pady=(0, 12), sticky="w")
 
-        paths_frame = ctk.CTkFrame(self, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        paths_frame.grid(row=2, column=0, padx=20, pady=8, sticky="ew")
+        paths_frame = ctk.CTkFrame(self, fg_color=APP_CARD, corner_radius=18, border_width=1, border_color=APP_BORDER)
+        paths_frame.grid(row=1, column=0, padx=CONTENT_MARGIN, pady=8, sticky="ew")
         paths_frame.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(paths_frame, text="Source folder", font=ctk.CTkFont(size=13, weight="bold")).grid(
@@ -94,7 +89,7 @@ class SortView(ctk.CTkFrame):
         ctk.CTkButton(dest_row, text="Gallery", width=80, command=self.open_dest_in_gallery).grid(row=0, column=2)
 
         body = ctk.CTkFrame(self, fg_color="transparent")
-        body.grid(row=3, column=0, padx=20, pady=8, sticky="nsew")
+        body.grid(row=2, column=0, padx=CONTENT_MARGIN, pady=8, sticky="nsew")
         body.grid_columnconfigure(0, weight=1)
         body.grid_columnconfigure(1, weight=1)
         body.grid_rowconfigure(0, weight=0)
@@ -118,7 +113,7 @@ class SortView(ctk.CTkFrame):
 
         ctk.CTkButton(
             rules_frame, text="Create media library folders", command=self.create_library_tree,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER, hover_color="#252540",
+            fg_color="transparent", border_width=1, border_color=APP_BORDER, hover_color=SIDEBAR_TILE_ACTIVE,
         ).pack(fill="x", padx=14, pady=(4, 8))
 
         tpl_hint = ctk.CTkLabel(
@@ -154,7 +149,7 @@ class SortView(ctk.CTkFrame):
         ctk.CTkLabel(preview_frame, text="Preview", font=ctk.CTkFont(size=14, weight="bold")).grid(
             row=0, column=0, padx=14, pady=(14, 8), sticky="w")
         self.preview_box = ctk.CTkTextbox(
-            preview_frame, font=FONT_MONO_SM, fg_color="#0f0f18", text_color="#aabbcc",
+            preview_frame, font=FONT_MONO_SM, fg_color=INPUT_BG, text_color=APP_TEXT_MUTED,
             wrap="word", activate_scrollbars=True,
         )
         self.preview_box.grid(row=1, column=0, padx=14, pady=(0, 14), sticky="nsew")
@@ -175,7 +170,7 @@ class SortView(ctk.CTkFrame):
         )
         self.browse_root_label.pack(side="right", fill="x", expand=True, padx=(12, 0))
 
-        folders_panel = ctk.CTkFrame(browse_frame, fg_color="#0f0f18", corner_radius=8)
+        folders_panel = ctk.CTkFrame(browse_frame, fg_color="INPUT_BG", corner_radius=8)
         folders_panel.grid(row=1, column=0, padx=(14, 6), pady=(0, 10), sticky="nsew")
         folders_panel.grid_rowconfigure(1, weight=1)
         folders_panel.grid_columnconfigure(0, weight=1)
@@ -188,7 +183,7 @@ class SortView(ctk.CTkFrame):
         )
         self.browse_folder_list.grid(row=1, column=0, padx=6, pady=(0, 8), sticky="nsew")
 
-        preview_panel = ctk.CTkFrame(browse_frame, fg_color="#0f0f18", corner_radius=8)
+        preview_panel = ctk.CTkFrame(browse_frame, fg_color="INPUT_BG", corner_radius=8)
         preview_panel.grid(row=1, column=1, padx=(6, 14), pady=(0, 10), sticky="nsew")
         preview_panel.grid_rowconfigure(1, weight=1)
         preview_panel.grid_columnconfigure(0, weight=1)
@@ -211,7 +206,7 @@ class SortView(ctk.CTkFrame):
         browse_actions.grid(row=2, column=0, columnspan=2, sticky="ew", padx=14, pady=(0, 12))
         ctk.CTkButton(
             browse_actions, text="Open in Gallery", width=140, command=self._browse_open_gallery,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER, hover_color="#252540",
+            fg_color="transparent", border_width=1, border_color=APP_BORDER, hover_color=SIDEBAR_TILE_ACTIVE,
         ).pack(side="left", padx=(0, 8))
         ctk.CTkButton(
             browse_actions, text="Organize from here", width=160, command=self._browse_organize_from_here,
@@ -219,14 +214,14 @@ class SortView(ctk.CTkFrame):
         ).pack(side="left", padx=(0, 8))
         ctk.CTkButton(
             browse_actions, text="Set as destination", width=150, command=self._browse_set_destination,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER, hover_color="#252540",
+            fg_color="transparent", border_width=1, border_color=APP_BORDER, hover_color=SIDEBAR_TILE_ACTIVE,
         ).pack(side="left")
 
         self.dest_dir.trace_add("write", self._on_dest_dir_changed)
         self.after_idle(self._refresh_folder_list)
 
         footer = ctk.CTkFrame(self, fg_color="transparent")
-        footer.grid(row=4, column=0, padx=20, pady=(8, 20), sticky="ew")
+        footer.grid(row=3, column=0, padx=CONTENT_MARGIN, pady=(8, CONTENT_MARGIN), sticky="ew")
         footer.grid_columnconfigure(0, weight=1)
 
         prog = ctk.CTkFrame(footer, fg_color="transparent")
@@ -464,7 +459,7 @@ class SortView(ctk.CTkFrame):
                 anchor="w",
                 height=30,
                 fg_color="transparent",
-                hover_color="#252540",
+                hover_color=SIDEBAR_TILE_ACTIVE,
                 text_color=APP_TEXT if exists else APP_TEXT_MUTED,
                 command=lambda p=path: self._select_browse_folder(p),
             )
@@ -478,7 +473,7 @@ class SortView(ctk.CTkFrame):
             if path == folder:
                 btn.configure(fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER)
             else:
-                btn.configure(fg_color="transparent", text_color=APP_TEXT, hover_color="#252540")
+                btn.configure(fg_color="transparent", text_color=APP_TEXT, hover_color=SIDEBAR_TILE_ACTIVE)
 
     def _select_browse_folder(self, folder: str):
         self._selected_browse_folder = folder

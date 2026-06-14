@@ -29,12 +29,16 @@ from app_settings import SCAN_DEPTH_OPTIONS, load_app_settings, push_recent_scan
 from fast_hash import full_hash, hash_many_parallel, quick_hash
 from file_utils import normalize_filepath, should_skip_dir, unreadable_reason
 from theme import (
-    APP_ACCENT, APP_BG, APP_BORDER, APP_BTN_DISABLED_FG, APP_BTN_DISABLED_TEXT,
-    APP_BTN_GHOST, APP_BTN_OUTLINE, APP_CARD, APP_DANGER, APP_DANGER_HOVER, APP_INPUT,
-    APP_PRIMARY, APP_PRIMARY_HOVER, APP_PRIMARY_TEXT, APP_SECONDARY, APP_SUCCESS,
-    APP_SUCCESS_HOVER, APP_SURFACE, APP_TEXT, APP_TEXT_MUTED, CARD_RADIUS, FONT_BODY,
-    FONT_HEADING, FONT_LABEL, FONT_MONO, FONT_MONO_SM, FONT_SMALL, FONT_TITLE, NEON_BG,
-    NEON_BLUE, NEON_CYAN, NEON_MAGENTA, NEON_ORANGE, NEON_TRACK, NEON_TRACK_BORDER,
+    APP_BORDER, APP_BTN_DISABLED_FG, APP_BTN_DISABLED_TEXT, APP_BTN_GHOST, APP_BTN_OUTLINE,
+    APP_DANGER, APP_DANGER_HOVER, APP_INPUT, APP_PRIMARY, APP_PRIMARY_HOVER, APP_PRIMARY_TEXT,
+    APP_SECONDARY, APP_SUCCESS, APP_SUCCESS_HOVER, APP_SURFACE, APP_TEXT, APP_TEXT_MUTED,
+    ACCENT, ACCENT_HOVER, BODY_FONT, CAPTION_FONT, CARD_RADIUS, CONTENT_MARGIN, CONTROL_GAP,
+    FONT_BODY, FONT_HEADING, FONT_LABEL, FONT_MONO, FONT_MONO_SM, FONT_SMALL, FONT_TITLE,
+    SECTION_FONT, SECTION_GAP, TEXT_SECONDARY, WARNING,
+)
+from design_system import (
+    ElevatedCard, LabeledEntry, ModernSlider, PageHeader, PrimaryButton, ResultsCard,
+    ScanProgressCard, SecondaryButton, SectionLabel, StyledCheckBox, StyledOptionMenu,
 )
 from ui_components import DUPLICATE_SHORTCUTS, EmptyState, VirtualGroupList
 from media_viewer import SideBySideCompareDialog
@@ -63,342 +67,6 @@ BROWSE_THUMB_SIZE = 80
 BROWSE_THUMB_MAX = 24
 BROWSE_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp", ".heic", ".heif"}
 
-class NeonScanHero(ctk.CTkFrame):
-    """Center hero overlay: smooth multi-ring gauge + glowing progress bar + percentage."""
-
-    GAUGE_SCALE = 4  # supersample factor for anti-aliased rings
-
-    def __init__(self, parent):
-        super().__init__(parent, fg_color=NEON_BG, corner_radius=0)
-        self.target_progress = 0.0
-        self.display_progress = 0.0
-        self.scanned = 0
-        self.total = 0
-        self.status_text = "Preparing scan..."
-        self.current_file = ""
-        self.recent_files = []
-        self.scan_start_time = None
-        self.duplicate_groups = 0
-        self.duplicate_files = 0
-        self.candidates = 0
-        self._on_cancel = None
-        self._running = False
-        self._after_id = None
-        self._pulse = 0.0
-        self._tick = 0
-        self._gauge_photo = None
-        self.indeterminate = False
-        self._flash_active = False
-        self._flash_tick = 0
-        self._flash_callback = None
-        self._cancel_requested = False
-
-        self.canvas = tk.Canvas(self, bg=NEON_BG, highlightthickness=0, bd=0)
-        self.canvas.pack(fill="both", expand=True, padx=0, pady=(0, 4))
-
-        btn_row = ctk.CTkFrame(self, fg_color="transparent")
-        btn_row.pack(fill="x", pady=(0, 16))
-        self.cancel_btn = ctk.CTkButton(
-            btn_row, text="Cancel Scan", width=140, height=36,
-            fg_color="#3a1a1a", hover_color="#5a2020", border_width=1, border_color="#662222",
-            command=self._handle_cancel
-        )
-        self.cancel_btn.pack()
-
-        self.canvas.bind("<Configure>", lambda _e: self._paint())
-
-    def show(self, on_cancel=None):
-        self.target_progress = 0.0
-        self.display_progress = 0.0
-        self.scanned = 0
-        self.total = 0
-        self.status_text = "Initializing scan..."
-        self.current_file = ""
-        self.recent_files = []
-        self.scan_start_time = time.time()
-        self.duplicate_groups = 0
-        self.duplicate_files = 0
-        self.candidates = 0
-        self._cancel_requested = False
-        self._on_cancel = on_cancel
-        self._running = True
-        self.cancel_btn.configure(state="normal", text="Cancel Scan")
-        self.grid(row=3, column=0, columnspan=2, sticky="nsew")
-        self.lift()
-        self._animate()
-
-    def hide(self):
-        self._running = False
-        if self._after_id is not None:
-            self.after_cancel(self._after_id)
-            self._after_id = None
-        self.grid_remove()
-
-    def _handle_cancel(self):
-        if self._cancel_requested:
-            return
-        self._cancel_requested = True
-        self.indeterminate = False
-        self.cancel_btn.configure(state="disabled", text="Cancelling…")
-        if self._on_cancel:
-            self._on_cancel()
-
-    def set_progress(
-        self, progress, scanned=None, total=None, status=None, current_file=None,
-        duplicate_groups=None, duplicate_files=None, candidates=None,
-    ):
-        if scanned is not None:
-            self.scanned = scanned
-        if total is not None:
-            self.total = total
-        clamped = max(0.0, min(1.0, progress))
-        if self.total == 0 and self.scanned > 0 and not self._cancel_requested:
-            clamped = max(clamped, min(0.08, 0.01 + self.scanned / 200_000))
-        if self._running and not self._cancel_requested and not self._flash_active:
-            clamped = max(self.target_progress, clamped)
-        self.target_progress = clamped
-        if duplicate_groups is not None:
-            self.duplicate_groups = duplicate_groups
-        if duplicate_files is not None:
-            self.duplicate_files = duplicate_files
-        if candidates is not None:
-            self.candidates = candidates
-        if self._cancel_requested:
-            self.indeterminate = False
-        else:
-            self.indeterminate = (
-                self.total == 0 and self.scanned == 0 and self.target_progress < 0.99
-            )
-        if status:
-            self.status_text = status
-        if current_file:
-            self.current_file = current_file
-            name = os.path.basename(current_file)
-            if not self.recent_files or self.recent_files[-1] != name:
-                self.recent_files.append(name)
-                self.recent_files = self.recent_files[-4:]
-
-    def flash_complete(self, callback=None, duplicate_groups: int = 0):
-        """Brief green flash when scan finishes."""
-        self.indeterminate = False
-        self.target_progress = 1.0
-        self.display_progress = 1.0
-        if duplicate_groups > 0:
-            self.status_text = f"Scan complete — {duplicate_groups:,} duplicate group(s) found!"
-        else:
-            self.status_text = "Scan complete — no duplicates found"
-        self._flash_active = True
-        self._flash_tick = 0
-        self._flash_callback = callback
-
-    def _animate(self):
-        if not self._running:
-            return
-        self._pulse = (self._pulse + 0.12) % (2 * math.pi)
-        self._tick += 1
-        if self._flash_active:
-            self._flash_tick += 1
-            if self._flash_tick >= 14:
-                self._flash_active = False
-                cb = self._flash_callback
-                self._flash_callback = None
-                if cb:
-                    cb()
-        elif self.indeterminate:
-            if self.scan_start_time:
-                elapsed = time.time() - self.scan_start_time
-                creep = min(0.05, 0.005 + elapsed / 120.0)
-            else:
-                creep = 0.005
-            self.display_progress = max(self.display_progress, creep)
-        else:
-            delta = self.target_progress - self.display_progress
-            if self._cancel_requested:
-                self.display_progress = self.target_progress
-            elif delta > 0:
-                self.display_progress += delta * 0.18 if abs(delta) > 0.001 else delta
-        self._paint()
-        self._after_id = self.after(33, self._animate)
-
-    def _build_gauge_image(self, diameter, progress):
-        """Render smooth full-circle rings with PIL supersampling."""
-        scale = self.GAUGE_SCALE
-        size = diameter * scale
-        cx = cy = size // 2
-        base = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(base)
-
-        sweep = max(0.0, min(1.0, progress))
-        rings = [
-            (int(diameter * 0.46 * scale), int(10 * scale), NEON_CYAN, 1.00, 0.00),
-            (int(diameter * 0.36 * scale), int(8 * scale), NEON_MAGENTA, 0.98, 0.10),
-            (int(diameter * 0.26 * scale), int(7 * scale), NEON_BLUE, 0.96, 0.20),
-        ]
-        track = (30, 30, 50, 90)
-
-        for radius, thickness, color, prog_scale, phase in rings:
-            ring_prog = min(1.0, sweep * prog_scale)
-            bbox = [cx - radius, cy - radius, cx + radius, cy + radius]
-            # Full track (360°)
-            draw.arc(bbox, 0, 359.9, fill=track, width=thickness)
-            if ring_prog <= 0.001:
-                continue
-            rgb = self._hex_to_rgb(color)
-            # Soft outer glow layers
-            for extra, alpha in [(6, 40), (3, 80)]:
-                glow = (*rgb, alpha)
-                draw.arc(bbox, -90, -90 + 360 * ring_prog, fill=glow, width=thickness + extra * scale)
-            # Main ring stroke
-            draw.arc(bbox, -90, -90 + 360 * ring_prog, fill=(*rgb, 255), width=thickness)
-
-        # Composite onto solid background and downscale for anti-aliasing
-        bg_rgb = self._hex_to_rgb(NEON_BG)
-        flat = Image.new("RGB", (size, size), bg_rgb)
-        flat.paste(base, (0, 0), base)
-        return flat.resize((diameter, diameter), Image.Resampling.LANCZOS)
-
-    @staticmethod
-    def _hex_to_rgb(h):
-        h = h.lstrip("#")
-        return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
-
-    def _paint(self):
-        c = self.canvas
-        c.delete("all")
-        w = max(c.winfo_width(), 400)
-        h = max(c.winfo_height(), 300)
-        cx = w // 2
-
-        # Fixed vertical zones so rings never overlap title or stats
-        title_y, subtitle_y = 32, 54
-        gauge_diameter = min(220, w - 140, max(150, h - 340))
-        gauge_top = 78
-        gauge_cy = gauge_top + gauge_diameter // 2
-        bar_y = gauge_top + gauge_diameter + 44
-
-        c.create_text(cx, title_y, text="SCANNING PHOTOS",
-                      fill=NEON_CYAN, font=("Segoe UI", 14, "bold"))
-        c.create_text(cx, subtitle_y, text="Finding duplicate files — live stats below",
-                      fill="#6a8a9a", font=("Segoe UI", 11))
-
-        gauge_img = self._build_gauge_image(gauge_diameter, self.display_progress)
-        self._gauge_photo = ImageTk.PhotoImage(gauge_img)
-        c.create_image(cx, gauge_cy, image=self._gauge_photo)
-
-        pct = int(self.display_progress * 100)
-        pct_color = self._blend_hex(NEON_CYAN, NEON_MAGENTA, 0.5 + 0.5 * math.sin(self._pulse * 0.7))
-        c.create_text(cx, gauge_cy, text=f"{pct}%", fill=pct_color,
-                      font=("Consolas", min(44, gauge_diameter // 5), "bold"))
-
-        bar_w, bar_h = min(520, w - 80), 18
-        bar_x1 = cx - bar_w // 2
-        bar_y1 = bar_y
-        bar_x2 = bar_x1 + bar_w
-        bar_y2 = bar_y1 + bar_h
-        self._draw_neon_bar(c, bar_x1, bar_y1, bar_x2, bar_y2, self.display_progress)
-
-        # Stats row: elapsed · count · speed · ETA
-        elapsed_str = format_elapsed(time.time() - self.scan_start_time) if self.scan_start_time else "0:00"
-        if self.total > 0 and self.scanned > 0 and self.scan_start_time:
-            elapsed = max(time.time() - self.scan_start_time, 0.1)
-            speed = self.scanned / elapsed
-            remaining = (self.total - self.scanned) / speed if speed > 0 else 0
-            stats = (f"Elapsed {elapsed_str}  ·  {self.scanned:,} / {self.total:,} files  ·  "
-                     f"{speed:.1f}/sec  ·  ETA {format_eta(remaining)}")
-        elif self.total > 0:
-            stats = f"Elapsed {elapsed_str}  ·  {self.scanned:,} / {self.total:,} files"
-        elif self.scanned > 0:
-            stats = f"Elapsed {elapsed_str}  ·  {self.scanned:,} files collected…"
-        else:
-            stats = f"Elapsed {elapsed_str}  ·  Counting files..."
-        if self._cancel_requested:
-            stats = f"Cancelling…  Elapsed {elapsed_str}"
-        c.create_text(cx, bar_y2 + 22, text=stats, fill=NEON_BLUE, font=FONT_MONO)
-
-        # Live duplicate count — helps decide whether to cancel a long scan
-        if self.duplicate_groups > 0:
-            dup_text = (
-                f"★  {self.duplicate_groups:,} duplicate group"
-                f"{'s' if self.duplicate_groups != 1 else ''} found"
-                f"  ({self.duplicate_files:,} file"
-                f"{'s' if self.duplicate_files != 1 else ''})"
-            )
-            dup_color = NEON_ORANGE
-        elif self.candidates > 0:
-            dup_text = f"○  {self.candidates:,} potential match{'es' if self.candidates != 1 else ''} — confirming…"
-            dup_color = "#8899aa"
-        else:
-            dup_text = "○  0 duplicate groups found so far"
-            dup_color = "#667788"
-        c.create_text(cx, bar_y2 + 44, text=dup_text, fill=dup_color, font=("Segoe UI", 12, "bold"))
-
-        # Phase status with animated dots
-        dots = "." * ((self._tick // 12) % 4)
-        c.create_text(cx, bar_y2 + 68, text=self.status_text + dots, fill=APP_TEXT_MUTED, font=FONT_SMALL)
-
-        # Current file highlight box
-        if self.current_file:
-            file_y = bar_y2 + 90
-            box_w = min(560, w - 60)
-            c.create_rectangle(cx - box_w // 2, file_y - 14, cx + box_w // 2, file_y + 14,
-                             fill="#101828", outline=NEON_CYAN, width=1)
-            c.create_text(cx - box_w // 2 + 10, file_y, text="▶", fill=NEON_ORANGE,
-                          font=FONT_MONO_SM, anchor="w")
-            c.create_text(cx - box_w // 2 + 28, file_y,
-                          text=truncate_middle(self.current_file, 64),
-                          fill=NEON_CYAN, font=FONT_MONO_SM, anchor="w")
-
-        # Recent activity log
-        if self.recent_files:
-            log_y = bar_y2 + 126
-            c.create_text(cx, log_y - 12, text="RECENT", fill="#556677", font=("Segoe UI", 9, "bold"))
-            for i, fname in enumerate(reversed(self.recent_files[-3:])):
-                c.create_text(cx, log_y + i * 18, text=f"  {fname}",
-                              fill="#667788", font=FONT_MONO_SM)
-
-    def _draw_neon_bar(self, canvas, x1, y1, x2, y2, progress):
-        r = 9
-        flash_green = self._flash_active and (self._flash_tick // 2) % 2 == 0
-        fill_primary = APP_SUCCESS if flash_green else NEON_CYAN
-        fill_secondary = "#13653f" if flash_green else NEON_MAGENTA
-        glow_a = "#004422" if flash_green else "#004444"
-        glow_b = "#003322" if flash_green else "#220044"
-        # Outer glow
-        for offset, color in [(4, "#003333"), (2, "#330033")]:
-            canvas.create_rectangle(x1 - offset, y1 - offset, x2 + offset, y2 + offset,
-                                    outline=color, width=1)
-        # Track
-        canvas.create_rectangle(x1, y1, x2, y2, fill=NEON_TRACK, outline=NEON_TRACK_BORDER, width=1)
-        fill_w = max(0, (x2 - x1) * progress)
-        if fill_w > 2:
-            fx2 = x1 + fill_w
-            # Glow under fill
-            canvas.create_rectangle(x1, y1 - 2, fx2, y2 + 2, fill=glow_a, outline="")
-            canvas.create_rectangle(x1, y1 - 1, fx2, y2 + 1, fill=glow_b, outline="")
-            # Gradient-style segments (cyan → magenta neon, or green flash)
-            segments = 24
-            for i in range(segments):
-                sx1 = x1 + (i / segments) * fill_w
-                sx2 = x1 + ((i + 1) / segments) * fill_w
-                if sx1 >= fx2:
-                    break
-                color = self._blend_hex(fill_primary, fill_secondary, i / max(segments - 1, 1))
-                canvas.create_rectangle(sx1, y1 + 2, min(sx2, fx2), y2 - 2, fill=color, outline="")
-            # Leading edge highlight (shimmer)
-            shimmer = x1 + fill_w - 4 + 3 * math.sin(self._pulse * 3)
-            if fill_w > 8:
-                canvas.create_rectangle(shimmer, y1, min(shimmer + 6, fx2), y2,
-                                        fill="#ffffff", outline="", stipple="gray50")
-
-    @staticmethod
-    def _blend_hex(c1, c2, t):
-        t = max(0.0, min(1.0, t))
-        r1, g1, b1 = int(c1[1:3], 16), int(c1[3:5], 16), int(c1[5:7], 16)
-        r2, g2, b2 = int(c2[1:3], 16), int(c2[3:5], 16), int(c2[5:7], 16)
-        r = int(r1 + (r2 - r1) * t)
-        g = int(g1 + (g2 - g1) * t)
-        b = int(b1 + (b2 - b1) * t)
-        return f"#{r:02x}{g:02x}{b:02x}"
 
 
 class DuplicateView(ctk.CTkFrame):
@@ -437,124 +105,109 @@ class DuplicateView(ctk.CTkFrame):
 
         _app = load_app_settings()
 
-        header = ctk.CTkFrame(self, fg_color="transparent")
-        header.grid(row=0, column=0, sticky="ew", padx=4, pady=(0, 4))
-        ctk.CTkLabel(header, text=t("nav.duplicates"), font=ctk.CTkFont(*FONT_TITLE),
-                     text_color=APP_TEXT).pack(anchor="w")
-        ctk.CTkLabel(
-            header, text=t("duplicates.subtitle"),
-            font=FONT_BODY, text_color=APP_TEXT_MUTED
-        ).pack(anchor="w", pady=(2, 0))
+        self.header = PageHeader(
+            self, t("nav.duplicates"), t("duplicates.subtitle"),
+        )
+        self.header.grid(row=0, column=0, sticky="ew", padx=CONTENT_MARGIN, pady=(CONTENT_MARGIN, SECTION_GAP))
 
         self.pre_scan_panel = ctk.CTkFrame(self, fg_color="transparent")
-        self.pre_scan_panel.grid(row=1, column=0, sticky="nsew")
-        self.pre_scan_panel.grid_columnconfigure(0, weight=1)
+        self.pre_scan_panel.grid(row=1, column=0, sticky="nsew", padx=CONTENT_MARGIN, pady=(0, CONTENT_MARGIN))
+        self.pre_scan_panel.grid_columnconfigure(0, weight=0, minsize=420)
+        self.pre_scan_panel.grid_columnconfigure(1, weight=1)
         self.pre_scan_panel.grid_rowconfigure(0, weight=1)
 
-        pre_center = ctk.CTkFrame(self.pre_scan_panel, fg_color="transparent")
-        pre_center.place(relx=0.5, rely=0.42, anchor="center")
+        self.settings_card = ElevatedCard(self.pre_scan_panel)
+        self.settings_card.grid(row=0, column=0, sticky="nsew", padx=(0, SECTION_GAP))
+        settings = self.settings_card.body
 
-        self.folder_card = ctk.CTkFrame(
-            pre_center, fg_color=APP_SURFACE, corner_radius=CARD_RADIUS,
-            border_width=1, border_color=APP_BORDER, width=720,
-        )
-        self.folder_card.pack(padx=20, pady=10)
-        self.folder_card.grid_columnconfigure(1, weight=1)
-
-        def _section_label(parent, row, text):
-            ctk.CTkLabel(
-                parent, text=text, font=FONT_LABEL, text_color=APP_TEXT_MUTED,
-            ).grid(row=row, column=0, columnspan=3, sticky="w", padx=20, pady=(14, 6))
-
-        _section_label(self.folder_card, 0, "Source")
+        SectionLabel(settings, "Select Folder", number=1).pack(anchor="w", pady=(0, CONTROL_GAP))
         self.folder_path = ctk.StringVar(value="")
-        path_row = ctk.CTkFrame(self.folder_card, fg_color="transparent")
-        path_row.grid(row=1, column=0, columnspan=3, sticky="ew", padx=16, pady=(0, 8))
+        path_row = ctk.CTkFrame(settings, fg_color="transparent")
+        path_row.pack(fill="x", pady=(0, CONTROL_GAP))
         path_row.grid_columnconfigure(0, weight=1)
-        self.entry = ctk.CTkEntry(
+        self.entry = LabeledEntry(
             path_row, textvariable=self.folder_path,
-            placeholder_text="Choose a folder containing your photos and videos…",
-            font=ctk.CTkFont(family="Consolas", size=12), height=40,
+            placeholder_text="Select folder to scan...",
         )
-        self.entry.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        self.browse_btn = ctk.CTkButton(
-            path_row, text="Browse", command=self.browse_folder, width=90, height=40,
-            fg_color=APP_BTN_OUTLINE, border_width=1, border_color=APP_BORDER,
-        )
+        self.entry.grid(row=0, column=0, sticky="ew", padx=(0, CONTROL_GAP))
+        self.browse_btn = SecondaryButton(path_row, text="Browse", command=self.browse_folder, width=90)
         self.browse_btn.grid(row=0, column=1)
 
-        self.recent_row = ctk.CTkFrame(self.folder_card, fg_color="transparent")
-        self.recent_row.grid(row=2, column=0, columnspan=3, sticky="ew", padx=16, pady=(0, 10))
+        self.recent_row = ctk.CTkFrame(settings, fg_color="transparent")
+        self.recent_row.pack(fill="x", pady=(0, SECTION_GAP))
 
-        _section_label(self.folder_card, 3, "Scope")
-        scope_row = ctk.CTkFrame(self.folder_card, fg_color="transparent")
-        scope_row.grid(row=4, column=0, columnspan=3, sticky="ew", padx=16, pady=(0, 10))
-        ctk.CTkLabel(scope_row, text="Scan depth", font=FONT_BODY).pack(side="left", padx=(0, 8))
+        SectionLabel(settings, "Scan Scope", number=2).pack(anchor="w", pady=(0, CONTROL_GAP))
+        scope_row = ctk.CTkFrame(settings, fg_color="transparent")
+        scope_row.pack(fill="x", pady=(0, SECTION_GAP))
+        ctk.CTkLabel(scope_row, text="Scan depth", font=BODY_FONT, text_color=APP_TEXT).pack(
+            side="left", padx=(0, CONTROL_GAP),
+        )
         self.scan_depth_var = ctk.StringVar(value=_app.scan_depth_label)
-        ctk.CTkOptionMenu(
+        StyledOptionMenu(
             scope_row, variable=self.scan_depth_var, values=list(SCAN_DEPTH_OPTIONS), width=160,
         ).pack(side="left")
 
-        _section_label(self.folder_card, 5, "Precision")
-        prec_frame = ctk.CTkFrame(self.folder_card, fg_color="transparent")
-        prec_frame.grid(row=6, column=0, columnspan=3, sticky="ew", padx=16, pady=(0, 8))
-        prec_frame.grid_columnconfigure(1, weight=1)
+        SectionLabel(settings, "Precision", number=3).pack(anchor="w", pady=(0, CONTROL_GAP))
+        prec_frame = ctk.CTkFrame(settings, fg_color="transparent")
+        prec_frame.pack(fill="x", pady=(0, SECTION_GAP))
         if HAS_IMAGEHASH:
-            ctk.CTkLabel(prec_frame, text="Image similarity", font=FONT_BODY).grid(row=0, column=0, sticky="w", pady=(0, 4))
+            row1 = ctk.CTkFrame(prec_frame, fg_color="transparent")
+            row1.pack(fill="x", pady=(0, CONTROL_GAP))
+            ctk.CTkLabel(row1, text="Image similarity", font=BODY_FONT, text_color=APP_TEXT).pack(side="left")
             self.phash_tolerance_var = ctk.IntVar(value=_app.phash_tolerance)
-            phash_row = ctk.CTkFrame(prec_frame, fg_color="transparent")
-            phash_row.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 8))
-            phash_row.grid_columnconfigure(0, weight=1)
-            ctk.CTkSlider(
-                phash_row, from_=0, to=16, number_of_steps=16,
+            self._phash_tol_label = ctk.CTkLabel(row1, text=str(_app.phash_tolerance), width=28, font=BODY_FONT)
+            self._phash_tol_label.pack(side="right")
+            ModernSlider(
+                prec_frame, from_=0, to=16, number_of_steps=16,
                 variable=self.phash_tolerance_var,
                 command=lambda v: self._phash_tol_label.configure(text=str(int(float(v)))),
-            ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
-            self._phash_tol_label = ctk.CTkLabel(phash_row, text=str(_app.phash_tolerance), width=28)
-            self._phash_tol_label.grid(row=0, column=1)
+            ).pack(fill="x", pady=(0, CONTROL_GAP))
             ctk.CTkLabel(
-                prec_frame, text="0 = exact only · 16 = loose match", font=FONT_SMALL, text_color=APP_TEXT_MUTED,
-            ).grid(row=2, column=0, columnspan=2, sticky="w", pady=(0, 6))
+                prec_frame, text="0 = exact only · 16 = loose match",
+                font=CAPTION_FONT, text_color=TEXT_SECONDARY,
+            ).pack(anchor="w", pady=(0, CONTROL_GAP))
         else:
             self.phash_tolerance_var = ctk.IntVar(value=5)
 
         self.video_tolerance_var = ctk.IntVar(value=_app.video_duplicate_tolerance)
-        ctk.CTkLabel(prec_frame, text="Video similarity", font=FONT_BODY).grid(
-            row=3, column=0, sticky="w", pady=(4, 4),
+        row2 = ctk.CTkFrame(prec_frame, fg_color="transparent")
+        row2.pack(fill="x", pady=(0, CONTROL_GAP))
+        ctk.CTkLabel(row2, text="Video similarity", font=BODY_FONT, text_color=APP_TEXT).pack(side="left")
+        self._video_tol_label = ctk.CTkLabel(
+            row2, text=str(_app.video_duplicate_tolerance), width=28, font=BODY_FONT,
         )
-        vid_slider_row = ctk.CTkFrame(prec_frame, fg_color="transparent")
-        vid_slider_row.grid(row=4, column=0, columnspan=2, sticky="ew")
-        vid_slider_row.grid_columnconfigure(0, weight=1)
-        ctk.CTkSlider(
-            vid_slider_row, from_=0, to=16, number_of_steps=16,
+        self._video_tol_label.pack(side="right")
+        ModernSlider(
+            prec_frame, from_=0, to=16, number_of_steps=16,
             variable=self.video_tolerance_var,
             command=lambda v: self._video_tol_label.configure(text=str(int(float(v)))),
-        ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        self._video_tol_label = ctk.CTkLabel(vid_slider_row, text=str(_app.video_duplicate_tolerance), width=28)
-        self._video_tol_label.grid(row=0, column=1)
+        ).pack(fill="x")
 
-        adv = ctk.CTkFrame(self.folder_card, fg_color=APP_INPUT, corner_radius=8)
-        adv.grid(row=7, column=0, columnspan=3, sticky="ew", padx=16, pady=(8, 12))
-        ctk.CTkLabel(adv, text="Advanced", font=FONT_LABEL, text_color=APP_TEXT_MUTED).pack(
-            anchor="w", padx=12, pady=(10, 4),
-        )
+        SectionLabel(settings, "Advanced", number=4).pack(anchor="w", pady=(SECTION_GAP, CONTROL_GAP))
         self.scan_videos_var = ctk.BooleanVar(value=True)
-        self.video_check = ctk.CTkCheckBox(
-            adv, text="Detect similar videos", variable=self.scan_videos_var,
+        self.video_check = StyledCheckBox(
+            settings, text="Similar videos (install ffmpeg)", variable=self.scan_videos_var,
         )
-        self.video_check.pack(anchor="w", padx=12, pady=(0, 12))
+        self.video_check.pack(anchor="w", pady=(0, SECTION_GAP))
 
-        self.scan_btn = ctk.CTkButton(
-            self.folder_card, text="Start Scan", command=self.start_scan_thread,
-            width=200, height=44,
-            fg_color=APP_PRIMARY, hover_color=APP_PRIMARY_HOVER, text_color=APP_PRIMARY_TEXT,
-            font=ctk.CTkFont(size=14, weight="bold"),
+        self.scan_btn = PrimaryButton(
+            settings, text="Start Scan", icon="search", command=self.start_scan_thread,
         )
-        self.scan_btn.grid(row=8, column=0, columnspan=3, pady=(4, 20))
+        self.scan_btn.pack(fill="x", pady=(SECTION_GAP, 0))
 
-        self.pre_scan_result = EmptyState(
-            pre_center, icon="✓", title="", subtitle="",
-        )
+        self.results_column = ctk.CTkFrame(self.pre_scan_panel, fg_color="transparent")
+        self.results_column.grid(row=0, column=1, sticky="nsew")
+        self.results_column.grid_rowconfigure(0, weight=1)
+        self.results_column.grid_columnconfigure(0, weight=1)
+
+        self.results_card = ResultsCard(self.results_column)
+        self.results_card.grid(row=0, column=0, sticky="nsew")
+
+        self.scan_progress = ScanProgressCard(self.results_column)
+        self.scan_progress.grid(row=0, column=0, sticky="nsew")
+        self.scan_progress.grid_remove()
+
+        self.scan_hero = self.scan_progress
 
         self.post_scan_panel = ctk.CTkFrame(self, fg_color="transparent")
         self.post_scan_panel.grid_columnconfigure(0, weight=0)
@@ -739,11 +392,6 @@ class DuplicateView(ctk.CTkFrame):
         )
         self.status_label.pack(side="left", padx=20, pady=12)
 
-        self.scan_hero = NeonScanHero(self)
-        self.scan_hero.grid(row=1, column=0, sticky="nsew")
-        self.scan_hero.grid_remove()
-        self.scan_hero.lift()
-
         self.post_scan_panel.grid_remove()
         self._refresh_recent_chips()
         self._check_video_ffmpeg()
@@ -760,13 +408,38 @@ class DuplicateView(ctk.CTkFrame):
             self._hide_pre_scan_result()
 
     def _hide_pre_scan_result(self):
-        self.pre_scan_result.pack_forget()
+        self.results_card.grid()
+        self.results_card.show_idle()
 
-    def _show_pre_scan_result(self, title: str, subtitle: str):
-        self.pre_scan_result.icon_label.configure(text="✓")
-        self.pre_scan_result.title_label.configure(text=title)
-        self.pre_scan_result.subtitle_label.configure(text=subtitle)
-        self.pre_scan_result.pack(padx=20, pady=(0, 16))
+    def _show_pre_scan_result(self, title: str, subtitle: str, total_count: int = 0, elapsed: str = ""):
+        stats = []
+        if total_count:
+            stats.append(("Files Scanned", f"{total_count:,}"))
+        if elapsed:
+            stats.append(("Time Elapsed", elapsed))
+        stats.append(("Duplicates Found", "0"))
+        self.results_card.grid()
+        self.results_card.show_success(
+            title,
+            subtitle,
+            stats=stats,
+            action_text="Scan Again",
+            action=self.start_scan_thread,
+        )
+
+    def _show_scan_progress(self):
+        self.results_card.grid_remove()
+        self.scan_progress.show(on_cancel=self.cancel_scan)
+        app = self._get_app()
+        if app:
+            app.set_sidebar_scanning(True, "Scanning")
+
+    def _hide_scan_progress(self):
+        self.scan_progress.hide()
+        self.results_card.grid()
+        app = self._get_app()
+        if app:
+            app.set_sidebar_scanning(False, "Ready")
 
     def _show_post_scan_mode(self, summary_text: str = ""):
         self._ui_mode = "post"
@@ -1039,7 +712,7 @@ class DuplicateView(ctk.CTkFrame):
             hero.target_progress,
             status="Cancelling scan — stopping after current step…",
         )
-        self.status_label.configure(text="Cancelling scan…", text_color=NEON_ORANGE)
+        self.status_label.configure(text="Cancelling scan…", text_color=WARNING)
         self._report_global_status("Cancelling scan…")
 
     def is_scan_running(self) -> bool:
@@ -1099,10 +772,10 @@ class DuplicateView(ctk.CTkFrame):
         if silent:
             self._report_global_status(f"Background scan{depth_hint}…")
         else:
-            self.status_label.configure(text="Scanning in progress...", text_color=NEON_ORANGE)
+            self.status_label.configure(text="Scanning in progress...", text_color=WARNING)
             self._report_global_status(f"Phase 1/5: Collecting files{depth_hint}...")
             self._set_scan_lock(True)
-            self.scan_hero.show(on_cancel=self.cancel_scan)
+            self._show_scan_progress()
             self.scan_hero.set_progress(0, 0, 0, f"Phase 1/5: Collecting files{depth_hint}...")
 
         thread = threading.Thread(
@@ -1568,6 +1241,7 @@ class DuplicateView(ctk.CTkFrame):
         self._on_scan_complete = None
         if not silent:
             self.scan_hero.hide()
+            self._hide_scan_progress()
             self._set_scan_lock(False)
             app = self._get_app()
             if app:
@@ -1577,7 +1251,7 @@ class DuplicateView(ctk.CTkFrame):
                 )
             self.status_label.configure(
                 text=f"Scan cancelled after {scanned_count:,} files.",
-                text_color=NEON_ORANGE,
+                text_color=WARNING,
             )
             self._show_pre_scan_mode()
         elif cb:
@@ -1589,6 +1263,7 @@ class DuplicateView(ctk.CTkFrame):
         self._silent_scan = False
         if not silent:
             self.scan_hero.hide()
+            self._hide_scan_progress()
             self._set_scan_lock(False)
         skip_note = ""
         if skipped_count:
@@ -1627,7 +1302,8 @@ class DuplicateView(ctk.CTkFrame):
             self.unbind_review_keys()
             self._show_pre_scan_result(
                 "No duplicates found",
-                f"Scanned {total_count:,} files with no duplicate groups.{skip_note}",
+                f"Great! Your media collection is clean.{skip_note}",
+                total_count=total_count,
             )
 
         self._rebuild_group_sidebar(

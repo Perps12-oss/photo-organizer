@@ -18,12 +18,12 @@ from services.file_operation_service import FileOperationService
 from services.metadata_provider import MetadataProvider
 from i18n import set_locale, t
 from theme import (
-    APP_BG, APP_SIDEBAR, APP_TEXT, APP_TEXT_MUTED, SIDEBAR_WIDTH,
+    APP_BG, init_fonts, SIDEBAR_WIDTH,
     WINDOW_DEFAULT, WINDOW_MIN_H, WINDOW_MIN_W,
 )
 from ui_components import (
     AppStatusController,
-    SidebarNavButton,
+    ModernSidebar,
     StatusBar,
     ToastManager,
     animate_view_enter,
@@ -40,6 +40,7 @@ class PhotoOrganizerApp(ctk.CTk):
         self.title(t("app.title"))
         self.geometry(WINDOW_DEFAULT)
         self.minsize(WINDOW_MIN_W, WINDOW_MIN_H)
+        init_fonts(self)
         self.configure(fg_color=APP_BG)
         self._start_minimized = start_minimized
         self._auto_watch = auto_watch
@@ -72,27 +73,6 @@ class PhotoOrganizerApp(ctk.CTk):
         self.grid_rowconfigure(1, weight=0)
 
         # Sidebar Navigation
-        self.sidebar_frame = ctk.CTkFrame(self, width=SIDEBAR_WIDTH, corner_radius=0, fg_color=APP_SIDEBAR)
-        self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(10, weight=1)
-        self._global_key_bindings: list[tuple] = []
-        self._wire_event_bus()
-
-        self.logo_label = ctk.CTkLabel(
-            self.sidebar_frame, text=t("app.title"),
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"), text_color=APP_TEXT
-        )
-        self.logo_label.grid(row=0, column=0, padx=16, pady=(20, 2), sticky="w")
-        ctk.CTkLabel(
-            self.sidebar_frame, text="Smart media organizer",
-            font=ctk.CTkFont(size=10), text_color=APP_TEXT_MUTED
-        ).grid(row=1, column=0, padx=16, pady=(0, 12), sticky="w")
-
-        ctk.CTkLabel(
-            self.sidebar_frame, text="Navigation", font=ctk.CTkFont(size=10, weight="bold"),
-            text_color=APP_TEXT_MUTED
-        ).grid(row=2, column=0, padx=16, pady=(4, 4), sticky="w")
-
         nav_specs = [
             ("home", t("nav.home"), self.show_home_frame),
             ("duplicates", t("nav.duplicates"), self.show_duplicate_frame),
@@ -101,11 +81,11 @@ class PhotoOrganizerApp(ctk.CTk):
             ("inbox", t("nav.inbox"), self.show_inbox_frame),
             ("settings", t("nav.settings"), self.show_settings_frame),
         ]
-        self._nav_buttons: dict[str, SidebarNavButton] = {}
-        for row_idx, (key, label, cmd) in enumerate(nav_specs, start=3):
-            nav_btn = SidebarNavButton(self.sidebar_frame, label, key, cmd)
-            nav_btn.grid(row=row_idx, column=0, padx=14, pady=3, sticky="ew")
-            self._nav_buttons[key] = nav_btn
+        self.sidebar_frame = ModernSidebar(self, nav_specs, SIDEBAR_WIDTH)
+        self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
+        self._nav_buttons = self.sidebar_frame.nav_buttons
+        self._global_key_bindings: list[tuple] = []
+        self._wire_event_bus()
 
         # Main Area Frames
         self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -200,8 +180,11 @@ class PhotoOrganizerApp(ctk.CTk):
                 self.tray.notify("Inbox Watcher", "Auto-started.")
 
     def _highlight_nav(self, active_key):
-        for key, nav in self._nav_buttons.items():
-            nav.set_active(key == active_key)
+        self.sidebar_frame.highlight(active_key)
+
+    def set_sidebar_scanning(self, scanning: bool, message: str = "Ready"):
+        self.sidebar_frame.set_footer_status(message, scanning=scanning)
+        self.status_bar.set_scanning(scanning)
 
     def set_status(self, message: str, **kwargs):
         self.status.set_status(message, **kwargs)

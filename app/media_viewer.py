@@ -9,7 +9,7 @@ from typing import Callable, Optional
 import customtkinter as ctk
 from PIL import Image, ImageOps
 
-from metadata_tools import ImageMetadata, read_metadata
+from theme import INPUT_BG
 from video_player import InlineVideoPlayer
 from video_thumbs import extract_video_thumbnail, is_video_file
 
@@ -57,7 +57,7 @@ class EmbeddedImageViewer(ctk.CTkFrame):
     """Fit-to-panel preview with overlay info."""
 
     def __init__(self, parent, on_fullscreen: Optional[Callable[[], None]] = None, **kwargs):
-        super().__init__(parent, fg_color="#0f0f18", corner_radius=8, **kwargs)
+        super().__init__(parent, fg_color=INPUT_BG, corner_radius=8, **kwargs)
         self.on_fullscreen = on_fullscreen
         self._photo = None
         self._current_path: Optional[str] = None
@@ -416,7 +416,7 @@ class SideBySideCompareDialog(ctk.CTkToplevel):
 
         self._refs: list[ctk.CTkImage] = []
         for col, path in enumerate((path_a, path_b)):
-            panel = ctk.CTkFrame(row, fg_color="#0f0f18", corner_radius=8)
+            panel = ctk.CTkFrame(row, fg_color=INPUT_BG, corner_radius=8)
             panel.grid(row=0, column=col, sticky="nsew", padx=6)
             ctk.CTkLabel(
                 panel, text=os.path.basename(path), font=FONT_MONO_SM, text_color=APP_TEXT_MUTED,
