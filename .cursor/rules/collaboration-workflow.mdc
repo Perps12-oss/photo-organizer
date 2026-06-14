@@ -1,0 +1,12 @@
+---
+description: Plan before implementing; push back when helpful; proactive recommendations
+alwaysApply: true
+---
+
+# Collaboration workflow (Photo Organizer + all projects)
+
+See also the user-global rule at `~/.cursor/rules/collaboration-workflow.mdc`.
+
+Before non-trivial changes: **propose a plan → get approval → implement once.**
+
+Do not implement large UI/feature changes from critiques or links without checking what already exists and what the user actually wants.
