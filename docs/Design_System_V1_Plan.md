@@ -286,7 +286,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | Phase | Syntax | Lint | App start | Committed | Pushed | Commit |
 |-------|--------|------|-----------|-----------|--------|--------|
 | 0–4 (+ partial 5–6) | pass | pass | pass | yes | yes | `13132eb` |
-| Plan doc + gate workflow | pass | pass | pass | pending | pending | — |
+| Plan doc + gate workflow | pass | pass | pass | yes | yes | `60f374f` |
 
 ### Smoke test checklist (Phase 6.1)
 
