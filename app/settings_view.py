@@ -18,9 +18,12 @@ from app_settings import (
 from inbox_watcher import WatcherSettings, load_settings, save_settings, is_windows_autostart_enabled, set_windows_autostart
 from design_system import ModernSlider, PageHeader, PrimaryButton, SecondaryButton, StyledCheckBox, StyledOptionMenu
 from theme import (
-    APPEARANCE_MODES, APP_BORDER, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN, GALLERY_SORT_OPTIONS,
-    INPUT_BG, PAD_MD, SECTION_GAP, TEXT_SECONDARY,
+    APPEARANCE_MODES, APP_BORDER, APP_PRIMARY_TEXT, APP_TEXT, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN,
+    ERROR,
+    APP_DANGER_HOVER,
+    GALLERY_SORT_OPTIONS, INPUT_BG, PAD_MD, SECTION_GAP, TEXT_SECONDARY,
 )
+from theme_presets import preset_id_from_label, preset_label, preset_menu_values
 from keyboard_bindings import ACTION_LABELS, DEFAULT_BINDINGS, shortcuts_reference_text
 from ui_components import SettingsSection
 
@@ -32,6 +35,7 @@ class SettingsView(ctk.CTkFrame):
         self,
         parent,
         on_theme_change: Optional[Callable[[str], None]] = None,
+        on_theme_preset_change: Optional[Callable[[str, str], None]] = None,
         on_gallery_settings_saved: Optional[Callable[[], None]] = None,
         on_open_sidecar_mapping: Optional[Callable[[], None]] = None,
         on_open_inbox: Optional[Callable[[], None]] = None,
@@ -41,6 +45,7 @@ class SettingsView(ctk.CTkFrame):
     ):
         super().__init__(parent, fg_color="transparent")
         self._on_theme_change = on_theme_change
+        self._on_theme_preset_change = on_theme_preset_change
         self._on_gallery_settings_saved = on_gallery_settings_saved
         self._on_open_sidecar_mapping = on_open_sidecar_mapping
         self._on_open_inbox = on_open_inbox
@@ -54,6 +59,7 @@ class SettingsView(ctk.CTkFrame):
         self._watcher = load_settings()
 
         self.appearance_var = ctk.StringVar(value=self._app.appearance_mode)
+        self.theme_preset_var = ctk.StringVar(value=preset_label(self._app.theme_preset))
         self.auto_save_var = ctk.BooleanVar(value=self._app.auto_save_metadata)
         self.auto_save_delay_var = ctk.DoubleVar(value=self._app.auto_save_delay_ms)
         self.gallery_sort_var = ctk.StringVar(value=self._app.gallery_sort)
@@ -120,10 +126,17 @@ class SettingsView(ctk.CTkFrame):
         section.pack(fill="x", pady=(0, PAD_MD))
         row = ctk.CTkFrame(section.body, fg_color="transparent")
         row.pack(fill="x", pady=4)
-        ctk.CTkLabel(row, text="Theme", width=140, anchor="w").pack(side="left")
+        ctk.CTkLabel(row, text="Appearance mode", width=140, anchor="w").pack(side="left")
         StyledOptionMenu(
             row, variable=self.appearance_var, values=list(APPEARANCE_MODES),
             width=200, command=self._on_theme_selected,
+        ).pack(side="left")
+        row_preset = ctk.CTkFrame(section.body, fg_color="transparent")
+        row_preset.pack(fill="x", pady=4)
+        ctk.CTkLabel(row_preset, text="Theme preset", width=140, anchor="w").pack(side="left")
+        StyledOptionMenu(
+            row_preset, variable=self.theme_preset_var, values=preset_menu_values(),
+            width=220, command=self._on_theme_preset_selected,
         ).pack(side="left")
         row2 = ctk.CTkFrame(section.body, fg_color="transparent")
         row2.pack(fill="x", pady=4)
@@ -381,7 +394,7 @@ class SettingsView(ctk.CTkFrame):
         ).pack(side="left", padx=4)
         ctk.CTkButton(
             snap_row, text="Delete", width=70,
-            fg_color="#3a1a1a", hover_color="#5a2020",
+            fg_color=ERROR, hover_color=APP_DANGER_HOVER,
             command=self._delete_selected_snapshot,
         ).pack(side="left", padx=4)
         self._refresh_snapshot_menu()
@@ -488,7 +501,7 @@ class SettingsView(ctk.CTkFrame):
 
         ref = ctk.CTkTextbox(
             section.body, height=120, font=("Consolas", 10), fg_color=INPUT_BG,
-            text_color="#aabbcc", wrap="word", activate_scrollbars=True,
+            text_color=TEXT_SECONDARY, wrap="word", activate_scrollbars=True,
         )
         ref.pack(fill="x", pady=4)
         ref.insert("1.0", shortcuts_reference_text())
@@ -556,15 +569,21 @@ class SettingsView(ctk.CTkFrame):
         if self._on_theme_change:
             self._on_theme_change(mode)
 
+    def _on_theme_preset_selected(self, label: str):
+        preset_id = preset_id_from_label(label)
+        accent = self.custom_accent_var.get().strip()
+        if self._on_theme_preset_change:
+            self._on_theme_preset_change(preset_id, accent)
+        elif self._on_toast:
+            self._on_toast(f"Theme: {label}")
+
     def _apply_custom_accent(self, accent: str) -> None:
-        import theme
-        if accent and accent.startswith("#"):
-            theme.ACCENT = accent
-            theme.APP_ACCENT = accent
-            theme.APP_PRIMARY = accent
-            theme.ACCENT_HOVER = accent
-            theme.APP_ACCENT_HOVER = accent
-            theme.APP_PRIMARY_HOVER = accent
+        from theme_manager import apply_preset_tokens, refresh_shell
+        preset_id = preset_id_from_label(self.theme_preset_var.get())
+        apply_preset_tokens(preset_id, accent)
+        parent = self.winfo_toplevel()
+        if hasattr(parent, "sidebar_frame"):
+            refresh_shell(parent)
 
     def _open_mapping(self):
         if self._on_open_sidecar_mapping:
@@ -575,6 +594,7 @@ class SettingsView(ctk.CTkFrame):
         self._app = load_app_settings()
         self._watcher = load_settings()
         self.appearance_var.set(self._app.appearance_mode)
+        self.theme_preset_var.set(preset_label(self._app.theme_preset))
         self.auto_save_var.set(self._app.auto_save_metadata)
         self.auto_save_delay_var.set(self._app.auto_save_delay_ms)
         self.gallery_sort_var.set(self._app.gallery_sort)
@@ -639,6 +659,7 @@ class SettingsView(ctk.CTkFrame):
             use_media_index=self.use_media_index_var.get(),
             auto_ocr_on_folder_load=self.auto_ocr_var.get(),
             custom_accent=self.custom_accent_var.get().strip(),
+            theme_preset=preset_id_from_label(self.theme_preset_var.get()),
             keyboard_shortcuts={
                 action: var.get().strip()
                 for action, var in self._shortcut_vars.items()
@@ -688,6 +709,8 @@ class SettingsView(ctk.CTkFrame):
         self.reload()
         if self._on_theme_change:
             self._on_theme_change(default_app.appearance_mode)
+        if self._on_theme_preset_change:
+            self._on_theme_preset_change(default_app.theme_preset, default_app.custom_accent)
         if self._on_gallery_settings_saved:
             self._on_gallery_settings_saved()
         if self._on_idle_scan_saved:

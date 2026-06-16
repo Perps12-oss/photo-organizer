@@ -21,6 +21,7 @@ from theme import (
     APP_BG, init_fonts, SIDEBAR_WIDTH,
     WINDOW_DEFAULT, WINDOW_MIN_H, WINDOW_MIN_W,
 )
+from theme_manager import GradientBackground, apply_from_settings, apply_preset_tokens, refresh_shell
 from ui_components import (
     AppStatusController,
     ModernSidebar,
@@ -41,6 +42,10 @@ class PhotoOrganizerApp(ctk.CTk):
         self.geometry(WINDOW_DEFAULT)
         self.minsize(WINDOW_MIN_W, WINDOW_MIN_H)
         init_fonts(self)
+        apply_from_settings()
+        self._bg_layer = GradientBackground(self)
+        self._bg_layer.place(x=0, y=0, relwidth=1, relheight=1)
+        self._bg_layer.lower()
         self.configure(fg_color=APP_BG)
         self._start_minimized = start_minimized
         self._auto_watch = auto_watch
@@ -95,7 +100,7 @@ class PhotoOrganizerApp(ctk.CTk):
 
         self.status_bar = StatusBar(self)
         self.status_bar.grid(row=1, column=0, columnspan=2, sticky="ew")
-        self.status = AppStatusController(self, self.status_bar)
+        self.status = AppStatusController(self, self.status_bar, self.sidebar_frame)
 
         self.home_frame = None
         self.duplicate_frame = None
@@ -185,6 +190,11 @@ class PhotoOrganizerApp(ctk.CTk):
     def set_sidebar_scanning(self, scanning: bool, message: str = "Ready"):
         self.sidebar_frame.set_footer_status(message, scanning=scanning)
         self.status_bar.set_scanning(scanning)
+        self.status.set_scanning(scanning)
+        if scanning:
+            self.status_bar.set_center(message)
+        else:
+            self.status_bar.set_center("")
 
     def set_status(self, message: str, **kwargs):
         self.status.set_status(message, **kwargs)
@@ -199,9 +209,19 @@ class PhotoOrganizerApp(ctk.CTk):
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
-        self.toast.refresh_theme()
+        refresh_shell(self)
         settings = load_app_settings()
         settings.appearance_mode = new_appearance_mode
+        save_app_settings(settings)
+
+    def change_theme_preset_event(self, preset_id: str, custom_accent: str = ""):
+        settings = load_app_settings()
+        accent = custom_accent if custom_accent else settings.custom_accent
+        apply_preset_tokens(preset_id, accent)
+        refresh_shell(self)
+        settings.theme_preset = preset_id
+        if custom_accent:
+            settings.custom_accent = custom_accent
         save_app_settings(settings)
 
     def _wire_event_bus(self):
@@ -442,6 +462,7 @@ class PhotoOrganizerApp(ctk.CTk):
             self.settings_frame = SettingsView(
                 self.main_frame,
                 on_theme_change=self.change_appearance_mode_event,
+                on_theme_preset_change=self.change_theme_preset_event,
                 on_gallery_settings_saved=self._sync_gallery_settings,
                 on_open_sidecar_mapping=self._open_sidecar_mapping_from_settings,
                 on_open_inbox=self.show_inbox_frame,
@@ -493,6 +514,10 @@ if __name__ == "__main__":
     bootstrap_result = bootstrap_config()
     ctk.set_appearance_mode(bootstrap_result.app_settings.appearance_mode)
     ctk.set_default_color_theme("blue")
+    apply_preset_tokens(
+        bootstrap_result.app_settings.theme_preset,
+        bootstrap_result.app_settings.custom_accent,
+    )
 
     app = PhotoOrganizerApp(start_minimized=args.minimized, auto_watch=args.auto_watch)
     app.after(150, lambda: show_startup_issues_dialog(app, bootstrap_result))

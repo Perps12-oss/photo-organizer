@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from theme import APPEARANCE_MODES, GALLERY_SORT_OPTIONS
+from theme_presets import DEFAULT_PRESET_ID, normalize_preset_id
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ KNOWN_APP_KEYS = frozenset({
     "recent_scan_folders",
     "auto_ocr_on_folder_load",
     "custom_accent",
+    "theme_preset",
     "keyboard_shortcuts",
     "locale",
     "idle_duplicate_scan_cpu_limit",
@@ -135,6 +137,7 @@ class AppSettings:
     recent_scan_folders: list[str] = field(default_factory=list)
     auto_ocr_on_folder_load: bool = False
     custom_accent: str = ""
+    theme_preset: str = DEFAULT_PRESET_ID
     keyboard_shortcuts: dict[str, str] = field(default_factory=dict)
     locale: str = "en"
     idle_duplicate_scan_cpu_limit: int = 50
@@ -270,6 +273,7 @@ def parse_app_settings(data: dict) -> AppSettings:
         recent_scan_folders=_normalize_recent_folders(data.get("recent_scan_folders")),
         auto_ocr_on_folder_load=bool(data.get("auto_ocr_on_folder_load", False)),
         custom_accent=_normalize_accent(data.get("custom_accent")),
+        theme_preset=normalize_preset_id(data.get("theme_preset")),
         keyboard_shortcuts=_normalize_shortcuts(data.get("keyboard_shortcuts")),
         locale=str(data.get("locale", "en") or "en"),
         idle_duplicate_scan_cpu_limit=max(10, min(100, int(data.get("idle_duplicate_scan_cpu_limit", 50)))),
@@ -308,6 +312,7 @@ def app_settings_to_payload(settings: AppSettings) -> dict:
         "recent_scan_folders": list(settings.recent_scan_folders),
         "auto_ocr_on_folder_load": settings.auto_ocr_on_folder_load,
         "custom_accent": settings.custom_accent,
+        "theme_preset": settings.theme_preset,
         "keyboard_shortcuts": dict(settings.keyboard_shortcuts),
         "locale": settings.locale,
         "idle_duplicate_scan_cpu_limit": settings.idle_duplicate_scan_cpu_limit,

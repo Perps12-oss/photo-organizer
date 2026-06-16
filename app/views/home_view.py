@@ -36,17 +36,17 @@ class HomeView(ctk.CTkFrame):
         inner = hero.body
 
         btn_row = ctk.CTkFrame(inner, fg_color="transparent")
-        btn_row.pack(pady=(0, 8))
+        btn_row.pack(pady=(SECTION_GAP, 12))
 
         dup_col = ctk.CTkFrame(btn_row, fg_color="transparent")
-        dup_col.pack(side="left", padx=10)
+        dup_col.pack(side="left", padx=16)
         PrimaryButton(dup_col, text=t("nav.duplicates"), width=200, command=on_duplicates).pack()
         ctk.CTkLabel(dup_col, text=t("home.find_duplicates_hint"), font=CAPTION_FONT, text_color=TEXT_SECONDARY).pack(
             pady=(6, 0),
         )
 
         gal_col = ctk.CTkFrame(btn_row, fg_color="transparent")
-        gal_col.pack(side="left", padx=10)
+        gal_col.pack(side="left", padx=16)
         SecondaryButton(
             gal_col, text=t("nav.gallery"), width=200, command=on_gallery if on_gallery else on_sort,
         ).pack()
@@ -55,17 +55,17 @@ class HomeView(ctk.CTkFrame):
         )
 
         btn_row2 = ctk.CTkFrame(inner, fg_color="transparent")
-        btn_row2.pack(pady=(8, 8))
+        btn_row2.pack(pady=(4, SECTION_GAP))
 
         org_col = ctk.CTkFrame(btn_row2, fg_color="transparent")
-        org_col.pack(side="left", padx=10)
+        org_col.pack(side="left", padx=16)
         SecondaryButton(org_col, text=t("nav.organizer"), width=200, command=on_sort).pack()
         ctk.CTkLabel(org_col, text=t("home.file_organizer_hint"), font=CAPTION_FONT, text_color=TEXT_SECONDARY).pack(
             pady=(6, 0),
         )
 
         inbox_col = ctk.CTkFrame(btn_row2, fg_color="transparent")
-        inbox_col.pack(side="left", padx=10)
+        inbox_col.pack(side="left", padx=16)
         SecondaryButton(
             inbox_col, text=t("nav.inbox"), width=200, command=on_inbox if on_inbox else on_sort,
         ).pack()

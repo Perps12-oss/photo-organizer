@@ -21,6 +21,7 @@ from theme import (
     APP_PRIMARY,
     APP_PRIMARY_TEXT,
     APP_SECONDARY,
+    APP_SIDEBAR,
     APP_SURFACE,
     APP_TEXT,
     APP_TEXT_MUTED,
@@ -127,7 +128,7 @@ class EmptyState(ctk.CTkFrame):
         if action_text and action:
             self._action_btn = ctk.CTkButton(
                 self, text=action_text, width=160, height=34,
-                fg_color=APP_ACCENT, text_color="#0a0a12", hover_color="#00ccaa",
+                fg_color=APP_ACCENT, text_color=APP_PRIMARY_TEXT, hover_color=APP_ACCENT_HOVER,
                 command=action,
             )
             self._action_btn.pack(pady=(PAD_SM, PAD_LG))
@@ -150,7 +151,7 @@ class EmptyState(ctk.CTkFrame):
             if self._action_btn is None:
                 self._action_btn = ctk.CTkButton(
                     self, text=action_text, width=160, height=34,
-                    fg_color=APP_ACCENT, text_color="#0a0a12", hover_color="#00ccaa",
+                    fg_color=APP_ACCENT, text_color=APP_PRIMARY_TEXT, hover_color=APP_ACCENT_HOVER,
                     command=action,
                 )
             else:
@@ -226,6 +227,12 @@ class SidebarNavButton(ctk.CTkFrame):
                 image=self._icon,
             )
 
+    def refresh_theme(self):
+        icon_name = NAV_ICON_MAP.get(self.nav_key, "folder")
+        self._icon = load_icon(icon_name, 20, TEXT_SECONDARY)
+        self._icon_active = load_icon(icon_name, 20, ACCENT)
+        self.set_active(self._active)
+
     def configure_state(self, state: str):
         self.button.configure(state=state)
 
@@ -234,7 +241,7 @@ class ModernSidebar(ctk.CTkFrame):
     """App sidebar with branding, navigation, and footer status."""
 
     def __init__(self, parent, nav_specs: list[tuple[str, str, Callable]], width: int, **kwargs):
-        super().__init__(parent, width=width, corner_radius=0, fg_color=WINDOW_BG, **kwargs)
+        super().__init__(parent, width=width, corner_radius=0, fg_color=APP_SIDEBAR, **kwargs)
         self.grid_propagate(False)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(20, weight=1)
@@ -276,17 +283,25 @@ class ModernSidebar(ctk.CTkFrame):
         self.footer_label.configure(text=text)
         self.footer_dot.configure(text_color=ACCENT if scanning else SUCCESS)
 
+    def refresh_theme(self):
+        self.configure(fg_color=APP_SIDEBAR)
+        self.footer_label.configure(text_color=TEXT_SECONDARY)
+        for btn in self.nav_buttons.values():
+            btn.refresh_theme()
+
     def highlight(self, key: str):
         for nav_key, btn in self.nav_buttons.items():
             btn.set_active(nav_key == key)
 
 
 class StatusBar(ctk.CTkFrame):
-    """Global footer status strip."""
+    """Global footer status strip — left status / center job / right version."""
 
     def __init__(self, parent, version: str = "1.2.0", **kwargs):
         super().__init__(parent, height=28, corner_radius=0, fg_color=STATUS_BAR_BG, **kwargs)
         self.grid_propagate(False)
+        self._scanning = False
+
         left = ctk.CTkFrame(self, fg_color="transparent")
         left.pack(side="left", fill="y", padx=16)
         self.dot = ctk.CTkLabel(left, text="●", font=CAPTION_FONT, text_color=SUCCESS)
@@ -295,12 +310,30 @@ class StatusBar(ctk.CTkFrame):
             left, text="Ready", anchor="w", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
         )
         self.label.pack(side="left", padx=(6, 0))
-        ctk.CTkLabel(
-            self, text=f"Version {version}", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
-        ).pack(side="right", padx=16)
+
+        self.center_label = ctk.CTkLabel(
+            self, text="", anchor="center", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
+        )
+        self.center_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        self.version_label = ctk.CTkLabel(
+            self, text=f"v{version}", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
+        )
+        self.version_label.pack(side="right", padx=16)
 
     def set_scanning(self, scanning: bool):
+        self._scanning = scanning
         self.dot.configure(text_color=ACCENT if scanning else SUCCESS)
+
+    def set_center(self, text: str):
+        self.center_label.configure(text=text or "")
+
+    def refresh_theme(self):
+        self.configure(fg_color=STATUS_BAR_BG)
+        self.label.configure(text_color=TEXT_SECONDARY)
+        self.center_label.configure(text_color=TEXT_SECONDARY)
+        self.version_label.configure(text_color=TEXT_SECONDARY)
+        self.dot.configure(text_color=ACCENT if self._scanning else SUCCESS)
 
 
 def animate_view_enter(root: ctk.CTk, status_bar: Optional["StatusBar"] = None):
@@ -434,22 +467,40 @@ class ToastManager:
 class AppStatusController:
     """Thread-safe status updates with priority tiers."""
 
-    def __init__(self, root: ctk.CTk, status_bar: StatusBar):
+    def __init__(self, root: ctk.CTk, status_bar: StatusBar, sidebar=None):
         self.root = root
         self.status_bar = status_bar
+        self.sidebar = sidebar
         self._priority = STATUS_IDLE
         self._clear_job: Optional[str] = None
+        self._scanning = False
+
+    def set_sidebar(self, sidebar):
+        self.sidebar = sidebar
+
+    def set_scanning(self, scanning: bool):
+        self._scanning = scanning
+
+    def _sync_sidebar_footer(self, message: str):
+        if self.sidebar and not self._scanning:
+            self.sidebar.set_footer_status(message, scanning=False)
 
     def set_status(
         self,
         message: str,
         priority: int = STATUS_INFO,
         clear_after_ms: Optional[int] = None,
+        center: Optional[str] = None,
     ):
         if priority < self._priority:
             return
         self._priority = priority
         self.status_bar.label.configure(text=message)
+        if center is not None:
+            self.status_bar.set_center(center)
+        elif priority != STATUS_JOB:
+            self.status_bar.set_center("")
+        self._sync_sidebar_footer(message)
         if self._clear_job:
             self.root.after_cancel(self._clear_job)
             self._clear_job = None
@@ -461,18 +512,21 @@ class AppStatusController:
         message: str,
         priority: int = STATUS_INFO,
         clear_after_ms: Optional[int] = None,
+        center: Optional[str] = None,
     ):
-        self.root.after(0, lambda: self.set_status(message, priority, clear_after_ms))
+        self.root.after(0, lambda: self.set_status(message, priority, clear_after_ms, center))
 
-    def set_job_status(self, message: str):
+    def set_job_status(self, message: str, center: str = ""):
+        self.status_bar.set_center(center or message)
         self.set_status(message, priority=STATUS_JOB)
 
-    def safe_job_status(self, message: str):
-        self.safe_status(message, priority=STATUS_JOB)
+    def safe_job_status(self, message: str, center: str = ""):
+        self.safe_status(message, priority=STATUS_JOB, center=center or message)
 
     def end_job(self, message: str, clear_after_ms: Optional[int] = 5000):
         """Drop job priority so post-scan messages can appear."""
         self._priority = STATUS_IDLE
+        self.status_bar.set_center("")
         self.set_status(message, priority=STATUS_INFO, clear_after_ms=clear_after_ms)
 
     def safe_end_job(self, message: str, clear_after_ms: Optional[int] = 5000):
@@ -481,6 +535,8 @@ class AppStatusController:
     def _reset_idle(self):
         self._priority = STATUS_IDLE
         self.status_bar.label.configure(text="Ready")
+        self.status_bar.set_center("")
+        self._sync_sidebar_footer("Ready")
         self._clear_job = None
 
 

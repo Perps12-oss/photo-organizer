@@ -16,6 +16,7 @@ from theme import (
     APP_PRIMARY_TEXT,
     BODY_FONT,
     BORDER,
+    BTN_ACTIVE,
     BTN_RADIUS,
     CAPTION_FONT,
     CARD_PADDING,
@@ -185,9 +186,9 @@ class StyledOptionMenu(ctk.CTkOptionMenu):
             corner_radius=INPUT_RADIUS,
             fg_color=INPUT_BG,
             button_color=SURFACE_BG,
-            button_hover_color="#30384a",
+            button_hover_color=BTN_ACTIVE,
             dropdown_fg_color=SURFACE_BG,
-            dropdown_hover_color="#30384a",
+            dropdown_hover_color=BTN_ACTIVE,
             dropdown_text_color=TEXT_PRIMARY,
             text_color=TEXT_PRIMARY,
             font=BODY_FONT,
@@ -443,6 +444,29 @@ class ResultsCard(ElevatedCard):
 
     def _set_stats(self, rows: list[tuple[str, str]]):
         self._clear_stats()
+        if len(rows) >= 3:
+            cols = ctk.CTkFrame(self.stats_frame, fg_color="transparent")
+            cols.pack(fill="x", pady=(4, 0))
+            cols.grid_columnconfigure((0, 1, 2), weight=1)
+            for col, (label, value) in enumerate(rows[:3]):
+                cell = ctk.CTkFrame(cols, fg_color=INPUT_BG, corner_radius=10)
+                cell.grid(row=0, column=col, sticky="ew", padx=4 if col else (0, 4))
+                ctk.CTkLabel(
+                    cell, text=value, font=SECTION_FONT, text_color=TEXT_PRIMARY,
+                ).pack(pady=(10, 2))
+                ctk.CTkLabel(
+                    cell, text=label, font=CAPTION_FONT, text_color=TEXT_SECONDARY,
+                ).pack(pady=(0, 10))
+            for label, value in rows[3:]:
+                row = ctk.CTkFrame(self.stats_frame, fg_color="transparent")
+                row.pack(fill="x", pady=3)
+                ctk.CTkLabel(
+                    row, text=label, font=CAPTION_FONT, text_color=TEXT_SECONDARY, width=120, anchor="w",
+                ).pack(side="left")
+                ctk.CTkLabel(
+                    row, text=value, font=BODY_FONT, text_color=TEXT_PRIMARY, anchor="w",
+                ).pack(side="left", padx=(8, 0))
+            return
         for label, value in rows:
             row = ctk.CTkFrame(self.stats_frame, fg_color="transparent")
             row.pack(fill="x", pady=3)

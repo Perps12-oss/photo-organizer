@@ -334,7 +334,7 @@ def show_startup_issues_dialog(parent, result: BootstrapResult) -> None:
 
     import customtkinter as ctk
     from app_settings import save_app_settings
-    from theme import APP_ACCENT, APP_BORDER, APP_TEXT_MUTED
+    from theme import ERROR, APP_ACCENT, APP_BORDER, APP_DANGER_HOVER, APP_PRIMARY_TEXT, APP_TEXT_MUTED, TEXT_SECONDARY
 
     notable = [i for i in result.issues if i.severity in ("warning", "error")]
 
@@ -406,7 +406,7 @@ def show_startup_issues_dialog(parent, result: BootstrapResult) -> None:
     ).pack(side="left")
     ctk.CTkButton(
         btn_row, text="OK", width=100,
-        fg_color=APP_ACCENT, text_color="#0a0a12",
+        fg_color=APP_ACCENT, text_color=APP_PRIMARY_TEXT,
         command=_close,
     ).pack(side="right")
 
@@ -428,7 +428,7 @@ def show_ffmpeg_missing_dialog(parent, settings: AppSettings) -> None:
 
     import customtkinter as ctk
     from app_settings import save_app_settings
-    from theme import APP_ACCENT, APP_BORDER, APP_TEXT_MUTED
+    from theme import ERROR, APP_ACCENT, APP_BORDER, APP_DANGER_HOVER, APP_PRIMARY_TEXT, APP_TEXT_MUTED, TEXT_SECONDARY
 
     dialog = ctk.CTkToplevel(parent)
     dialog.title("ffmpeg not found")
@@ -484,7 +484,7 @@ def show_ffmpeg_missing_dialog(parent, settings: AppSettings) -> None:
     ).pack(side="left")
     ctk.CTkButton(
         btn_row, text="OK", width=100,
-        fg_color=APP_ACCENT, text_color="#0a0a12",
+        fg_color=APP_ACCENT, text_color=APP_PRIMARY_TEXT,
         command=_close,
     ).pack(side="right")
 

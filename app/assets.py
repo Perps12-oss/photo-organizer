@@ -12,8 +12,10 @@ _ROOT = os.path.dirname(_APP_DIR)
 ASSETS_DIR = os.path.join(_ROOT, "assets")
 FONTS_DIR = os.path.join(ASSETS_DIR, "fonts")
 ICONS_DIR = os.path.join(ASSETS_DIR, "icons")
+THEMES_DIR = os.path.join(ASSETS_DIR, "themes")
 
 _ICON_CACHE: dict[tuple[str, int, str], ctk.CTkImage] = {}
+_THEME_BG_CACHE: dict[str, ctk.CTkImage] = {}
 _FONTS_REGISTERED = False
 
 
@@ -66,6 +68,28 @@ def _tint_image(path: str, color: str, size: int) -> Image.Image:
             if pa > 0:
                 pixels[x, y] = (cr, cg, cb, pa)
     return img
+
+
+def load_theme_background(preset_id: str, width: int = 1600, height: int = 900) -> Optional[ctk.CTkImage]:
+    """Load committed gradient PNG for a theme preset."""
+    key = f"{preset_id}:{width}x{height}"
+    if key in _THEME_BG_CACHE:
+        return _THEME_BG_CACHE[key]
+
+    path = os.path.join(THEMES_DIR, f"{preset_id}.png")
+    if not os.path.isfile(path):
+        return None
+
+    pil = Image.open(path).convert("RGB")
+    if pil.size != (width, height):
+        pil = pil.resize((width, height), Image.Resampling.LANCZOS)
+    img = ctk.CTkImage(light_image=pil, dark_image=pil, size=(width, height))
+    _THEME_BG_CACHE[key] = img
+    return img
+
+
+def clear_theme_background_cache() -> None:
+    _THEME_BG_CACHE.clear()
 
 
 def load_icon(name: str, size: int = 20, color: Optional[str] = None) -> Optional[ctk.CTkImage]:

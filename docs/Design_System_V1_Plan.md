@@ -52,6 +52,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 |-------|------|--------|-------|
 | 0 | Branch & assets | **done** | Branch pushed; fonts + icons committed |
 | 1 | Token layer | **done** | `theme.py` V1 tokens + `init_fonts()` |
+| 1.5 | Multigradient themes | **done** | 11 presets + PNG backgrounds + live refresh |
 | 2 | Component library | **partial** | Core widgets in `design_system.py`; `ViewPage` unused widely |
 | 3 | Shell integration | **done** | `ModernSidebar`, `StatusBar`, shell wiring |
 | 4 | Find Duplicates (reference) | **partial** | Pre + post-scan V1 cards; 4.4 tip bar done |
@@ -84,7 +85,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
 | 0.1 | Add more icon sizes / names as views need them | planned | e.g. `x`, `chevron`, `info` |
-| 0.2 | Ship Inter license file in `assets/fonts/` | planned | Compliance nicety |
+| 0.2 | Ship Inter license file in `assets/fonts/` | done | `assets/fonts/LICENSE.txt` (OFL summary) |
 | 0.3 | CI step: run `generate_icons.py` + fail if dirty | deferred | Only if icon churn becomes frequent |
 
 ---
@@ -106,8 +107,10 @@ Do **not** mark a phase complete or push until all of the following pass:
 |----|------|--------|-------|
 | 1.1 | Full light palette + appearance mode mapping | planned | Settings dropdown stays; map to real light tokens |
 | 1.2 | Remove legacy `APP_*` aliases after full migration | planned | Grep-driven cleanup |
-| 1.3 | Accent override refreshes live widgets (not just globals) | planned | Today: mutates `theme` module only |
-| 1.4 | High-DPI font/icon scale tokens | planned | 125% / 150% Windows scaling pass |
+| 1.3 | Accent / preset refreshes live shell widgets | done | `theme_manager.refresh_shell()` — sidebar, status, bg, toast |
+| 1.5 | Multigradient theme presets (10 + default) | done | `theme_presets.py`, `assets/themes/*.png`, Settings picker |
+| 1.6 | Theme background generator script | done | `scripts/generate_theme_backgrounds.py` |
+| 1.4 | High-DPI font/icon scale tokens | deferred | 125% / 150% Windows scaling pass |
 
 ---
 
@@ -172,8 +175,8 @@ Do **not** mark a phase complete or push until all of the following pass:
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| 3.1 | Sidebar footer sync with `AppStatusController` message text | planned | Today: scanning boolean + short label |
-| 3.2 | Status bar multi-zone (left / center / right job detail) | planned | Optional; single label today |
+| 3.1 | Sidebar footer sync with `AppStatusController` message text | done | Footer mirrors status when not scanning |
+| 3.2 | Status bar multi-zone (left / center / right job detail) | done | Left status · center job · right version |
 | 3.3 | Collapsible sidebar (icon-only mode) | deferred | Width jump; needs design pass |
 | 3.4 | Uniform `CONTENT_MARGIN` via shared wrapper vs per-view padx | planned | Some views set margin locally |
 
@@ -216,7 +219,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 4.2 | Post-scan: action bar + recommendation panel token cleanup | done | Subset of 4.1 |
 | 4.3 | Results success icon → Lucide `check` PNG at 72px | done | |
 | 4.4 | Pre-scan footer: tip row + secondary actions (mockup) | done | Tip + Open Scanned Folder + Open Quarantine |
-| 4.5 | Scan stats row on results (Files / Time / Duplicates columns) | partial | Basic stats in `ResultsCard`; enrich layout |
+| 4.5 | Scan stats row on results (Files / Time / Duplicates columns) | done | 3-column stat cells in `ResultsCard` |
 | 4.6 | Animated success glow / sparkle | deferred | Spec skip for V1 |
 | 4.7 | Recent folder chips → `GhostButton` style | done | |
 
@@ -239,7 +242,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 **Home**
 
 - [x] Phase 5 — baseline pass
-- [ ] Phase 5.1 — align hero spacing to mockups if needed
+- [x] Phase 5.1 — align hero spacing to mockups if needed
 
 **Settings**
 
@@ -272,7 +275,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 |----|------|--------|-------|
 | 5.7 | Dialogs / lightbox / sidecar UI (`media_viewer.py`, dialogs) | done | Gallery dialogs + viewer/lightbox/compare + embedded panel |
 | 5.8 | `photo_organizer_pro.py` / `hybrid.py` — out of scope unless requested | deferred | Enhanced app is canonical shell |
-| 5.9 | Empty states → shared `EmptyState` or `ResultsCard` pattern | planned | Gallery + sort preview |
+| 5.9 | Empty states → shared `EmptyState` or `ResultsCard` pattern | done | Gallery + sort preview use `EmptyState` |
 
 ---
 
@@ -296,6 +299,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 4.4 tip bar + 5.6 gallery depth | pass | pass | pass | yes | yes | `23eaff1` |
 | Sort footer + inbox status + 5.7 dialogs (partial) | pass | pass | pass | yes | yes | `2d889b0` |
 | 5.7 viewer/lightbox + 6 hex cleanup + gate | pass | pass | pass | yes | yes | `09b366a` |
+| Multigradient themes + P1 polish | pass | pass | pass | yes | yes | TBD |
 
 ### Smoke test checklist (Phase 6.1)
 
@@ -314,7 +318,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
 | 6.2 | Delete unused neon token names if any linger | partial | `helpers.get_score_color` → SUCCESS/WARNING/ERROR; pro/hybrid deferred (5.8) |
-| 6.3 | Lint rule or script: flag `#` colors outside `theme.py` / `design_system.py` | deferred | |
+| 6.3 | Lint rule or script: flag `#` colors outside `theme.py` / `design_system.py` | done | `scripts/check_hex_colors.py` |
 | 6.4 | Screenshot baseline / visual regression | deferred | Manual only for now |
 | 6.5 | Merge `ui/design-system-v1` → `master` via PR | planned | After 6.1 sign-off |
 
@@ -348,6 +352,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 2026-06-16 | Phase 4.4 pre-scan tip bar; Phase 5.6 gallery depth (side panel, filters, bulk) |
 | 2026-06-16 | Sort footer DS buttons; inbox status card polish; gallery dialog token pass (5.7 partial) |
 | 2026-06-16 | Phase 5.7b viewer/lightbox/compare tokens; duplicate thumb hex → theme; helpers score colors; gate pass |
+| 2026-06-16 | Phase 1.5 multigradient themes (11 presets); 1.3 live refresh; 3.1–3.2 status zones; 4.5 stats columns; 5.1 hero spacing; 6.3 hex script |
 
 ---
 

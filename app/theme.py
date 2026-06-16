@@ -35,6 +35,9 @@ ANIM_FADE_MS = 120
 ANIM_VIEW_MS = 180
 APPEARANCE_MODES = ("Dark", "Light", "System")
 
+# Active multigradient preset (mutated by theme_manager.apply_preset_tokens)
+CURRENT_PRESET_ID = "default"
+
 # V1 color stack
 WINDOW_BG = "#1a1d24"
 SURFACE_BG = "#222731"
