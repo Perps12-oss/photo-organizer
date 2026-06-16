@@ -293,7 +293,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | Plan doc + gate workflow | pass | pass | pass | yes | yes | `60f374f` |
 | 4.1–4.7 + 5.2–5.6 (partial) + 2.3/2.5/2.6 | pass | pass | pass | yes | yes | `7ca4656` |
 | 4.4 tip bar + 5.6 gallery depth | pass | pass | pass | yes | yes | `23eaff1` |
-| Sort footer + inbox status + 5.7 dialogs (partial) | pass | pass | pass | yes | yes | *(this commit)* |
+| Sort footer + inbox status + 5.7 dialogs (partial) | pass | pass | pass | yes | yes | `2d889b0` |
 
 ### Smoke test checklist (Phase 6.1)
 
