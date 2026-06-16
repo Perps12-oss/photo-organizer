@@ -65,7 +65,10 @@ from video_thumbs import extract_video_thumbnail, ffmpeg_available, is_video_fil
 from smart_playlists import PlaylistStore, SmartPlaylist
 from gps_utils import open_in_browser, osm_url
 from takeout_import import discover_takeout_albums, find_takeout_sidecar, import_takeout_album
-from design_system import ElevatedCard, PageHeader, PrimaryButton, SecondaryButton, StyledCheckBox, StyledOptionMenu
+from design_system import (
+    ElevatedCard, GhostButton, LabeledEntry, PageHeader, PrimaryButton, SecondaryButton,
+    StyledCheckBox, StyledOptionMenu,
+)
 from theme import (
     APP_ACCENT, APP_ACCENT_HOVER, APP_BORDER, APP_CARD, APP_SECONDARY, APP_SECONDARY_HOVER,
     APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, CONTENT_MARGIN, FONT_MONO_SM,
@@ -390,8 +393,9 @@ class MediaGalleryView(ctk.CTkFrame):
 
         ctk.CTkLabel(toolbar, text="Folder", font=ctk.CTkFont(size=13, weight="bold")).grid(
             row=0, column=0, padx=12, pady=12, sticky="w")
-        ctk.CTkEntry(toolbar, textvariable=self.folder_var, placeholder_text="Photo folder or event album").grid(
-            row=0, column=1, padx=8, pady=12, sticky="ew")
+        LabeledEntry(
+            toolbar, textvariable=self.folder_var, placeholder_text="Photo folder or event album",
+        ).grid(row=0, column=1, padx=8, pady=12, sticky="ew")
         SecondaryButton(toolbar, text="Browse", width=80, command=self.browse_folder).grid(row=0, column=2, padx=4, pady=12)
         PrimaryButton(toolbar, text="Load", width=70, command=self.load_folder).grid(row=0, column=3, padx=4, pady=12)
         SecondaryButton(toolbar, text="Library", width=70, command=self.open_library_root).grid(row=0, column=4, padx=4, pady=12)
@@ -405,75 +409,74 @@ class MediaGalleryView(ctk.CTkFrame):
         filters.grid_columnconfigure(5, weight=1)
 
         ctk.CTkLabel(filters, text="Tag", width=40).grid(row=0, column=0, padx=(12, 4), pady=10)
-        self.tag_menu = ctk.CTkOptionMenu(
+        self.tag_menu = StyledOptionMenu(
             filters, variable=self.tag_filter_var, values=["(all tags)"],
             command=lambda _: self.apply_filters(), width=120,
         )
         self.tag_menu.grid(row=0, column=1, padx=4, pady=10)
         ctk.CTkLabel(filters, text="Min stars", width=60).grid(row=0, column=2, padx=(8, 4), pady=10)
-        ctk.CTkOptionMenu(
+        StyledOptionMenu(
             filters, variable=self.min_rating_var,
             values=["0+", "1+", "2+", "3+", "4+", "5"],
             command=lambda _: self.apply_filters(), width=70,
         ).grid(row=0, column=3, padx=4, pady=10, sticky="w")
         ctk.CTkLabel(filters, text="Sort", width=36).grid(row=0, column=4, padx=(8, 4), pady=10)
-        self.sort_menu = ctk.CTkOptionMenu(
+        self.sort_menu = StyledOptionMenu(
             filters, variable=self.sort_var, values=list(GALLERY_SORT_OPTIONS),
             command=self._on_sort_changed, width=130,
         )
         self.sort_menu.grid(row=0, column=5, padx=4, pady=10, sticky="w")
-        ctk.CTkEntry(
+        LabeledEntry(
             filters, textvariable=self.search_var,
             placeholder_text="Search filename, caption, tags, OCR text…", width=180,
         ).grid(row=0, column=6, padx=8, pady=10, sticky="ew")
         filters.grid_columnconfigure(6, weight=1)
-        ctk.CTkCheckBox(filters, text="Match all tags", variable=self.match_all_var,
-                        command=self.apply_filters).grid(row=0, column=7, padx=4, pady=10)
-        ctk.CTkButton(filters, text="Search", width=70, command=self.apply_filters).grid(row=0, column=8, padx=4, pady=10)
-        ctk.CTkButton(filters, text="Clear", width=60, fg_color="transparent", border_width=1,
-                      border_color=APP_BORDER, command=self.clear_filters).grid(row=0, column=9, padx=(4, 4), pady=10)
-        ctk.CTkButton(filters, text="Export CSV", width=90, command=self.export_csv).grid(
+        StyledCheckBox(filters, text="Match all tags", variable=self.match_all_var,
+                       command=self.apply_filters).grid(row=0, column=7, padx=4, pady=10)
+        SecondaryButton(filters, text="Search", width=70, command=self.apply_filters).grid(
+            row=0, column=8, padx=4, pady=10)
+        GhostButton(filters, text="Clear", width=60, command=self.clear_filters).grid(
+            row=0, column=9, padx=(4, 4), pady=10)
+        SecondaryButton(filters, text="Export CSV", width=90, command=self.export_csv).grid(
             row=0, column=10, padx=4, pady=10)
-        ctk.CTkButton(filters, text="Export JSON", width=90, command=self.export_json).grid(
+        SecondaryButton(filters, text="Export JSON", width=90, command=self.export_json).grid(
             row=0, column=11, padx=4, pady=10)
-        ctk.CTkButton(
+        PrimaryButton(
             filters, text="Autodetect wizard", width=120,
-            fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
             command=self.open_autodetect_wizard,
         ).grid(row=0, column=12, padx=(4, 12), pady=10)
 
         ctk.CTkLabel(filters, text="Playlist", width=52).grid(row=1, column=0, padx=(12, 4), pady=(0, 10))
-        self.playlist_menu = ctk.CTkOptionMenu(
+        self.playlist_menu = StyledOptionMenu(
             filters, variable=self.playlist_var, values=self._playlist_names(),
             command=self._on_playlist_selected, width=140,
         )
         self.playlist_menu.grid(row=1, column=1, padx=4, pady=(0, 10), sticky="w")
-        ctk.CTkButton(filters, text="Save filters", width=90, command=self._save_playlist).grid(
+        SecondaryButton(filters, text="Save filters", width=90, command=self._save_playlist).grid(
             row=1, column=2, padx=4, pady=(0, 10))
-        ctk.CTkButton(
+        SecondaryButton(
             filters, text="Build search index", width=130,
-            fg_color=APP_SECONDARY, hover_color=APP_SECONDARY_HOVER, text_color="#f0f0f0",
             command=self.build_ocr_index,
         ).grid(row=1, column=3, padx=4, pady=(0, 10))
         self.ocr_status_label = ctk.CTkLabel(
             filters, text=self._ocr_status_text(), font=ctk.CTkFont(size=11),
             text_color=APP_TEXT_MUTED, wraplength=520, justify="left",
         )
-        ctk.CTkButton(filters, text="Map view", width=80, command=self.open_map_view).grid(
+        GhostButton(filters, text="Map view", width=80, command=self.open_map_view).grid(
             row=1, column=4, padx=4, pady=(0, 10))
-        ctk.CTkButton(filters, text="Takeout merge", width=110, command=self.merge_takeout_folder).grid(
+        SecondaryButton(filters, text="Takeout merge", width=110, command=self.merge_takeout_folder).grid(
             row=1, column=5, padx=4, pady=(0, 10))
-        ctk.CTkButton(filters, text="Takeout albums", width=110, command=self.import_takeout_albums).grid(
+        SecondaryButton(filters, text="Takeout albums", width=110, command=self.import_takeout_albums).grid(
             row=1, column=6, padx=4, pady=(0, 10))
-        ctk.CTkButton(filters, text="Compare", width=80, command=self.open_side_by_side_compare).grid(
+        SecondaryButton(filters, text="Compare", width=80, command=self.open_side_by_side_compare).grid(
             row=1, column=7, padx=4, pady=(0, 10))
-        ctk.CTkButton(filters, text="Find similar", width=100, command=self.find_similar_images).grid(
+        SecondaryButton(filters, text="Find similar", width=100, command=self.find_similar_images).grid(
             row=1, column=8, padx=4, pady=(0, 10))
         ctk.CTkLabel(filters, text="From", width=36).grid(row=2, column=0, padx=(12, 2), pady=(0, 8))
-        ctk.CTkEntry(filters, textvariable=self.date_from_var, placeholder_text="YYYY-MM-DD", width=100).grid(
+        LabeledEntry(filters, textvariable=self.date_from_var, placeholder_text="YYYY-MM-DD", width=100).grid(
             row=2, column=1, padx=2, pady=(0, 8), sticky="w")
         ctk.CTkLabel(filters, text="To", width=24).grid(row=2, column=2, padx=(4, 2), pady=(0, 8))
-        ctk.CTkEntry(filters, textvariable=self.date_to_var, placeholder_text="YYYY-MM-DD", width=100).grid(
+        LabeledEntry(filters, textvariable=self.date_to_var, placeholder_text="YYYY-MM-DD", width=100).grid(
             row=2, column=3, padx=2, pady=(0, 8), sticky="w")
         self.ocr_status_label.grid(row=3, column=0, columnspan=12, padx=12, pady=(0, 10), sticky="w")
 
@@ -483,15 +486,16 @@ class MediaGalleryView(ctk.CTkFrame):
         body.grid_columnconfigure(1, weight=2)
         body.grid_rowconfigure(0, weight=1)
 
-        gallery_card = ctk.CTkFrame(body, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        gallery_card.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
+        gallery_elevated = ElevatedCard(body)
+        gallery_elevated.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
+        gallery_card = gallery_elevated.body
         gallery_card.grid_rowconfigure(1, weight=1)
         gallery_card.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(gallery_card, text="Photos & videos", font=ctk.CTkFont(size=14, weight="bold")).grid(
-            row=0, column=0, padx=14, pady=(12, 6), sticky="w")
+            row=0, column=0, padx=4, pady=(0, 6), sticky="w")
         self.gallery_scroll = ctk.CTkScrollableFrame(gallery_card, fg_color=INPUT_BG)
-        self.gallery_scroll.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="nsew")
+        self.gallery_scroll.grid(row=1, column=0, padx=4, pady=(0, 4), sticky="nsew")
         self.gallery_grid = ctk.CTkFrame(self.gallery_scroll, fg_color="transparent")
         self.gallery_grid.pack(fill="x", expand=True)
         self.gallery_empty = EmptyState(
@@ -504,16 +508,17 @@ class MediaGalleryView(ctk.CTkFrame):
         )
         self.gallery_empty.pack(pady=60)
 
-        side = ctk.CTkFrame(body, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        side.grid(row=0, column=1, sticky="nsew")
+        side_elevated = ElevatedCard(body)
+        side_elevated.grid(row=0, column=1, sticky="nsew")
+        side = side_elevated.body
         side.grid_rowconfigure(1, weight=1)
         side.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(side, text="Viewer & metadata", font=ctk.CTkFont(size=14, weight="bold")).grid(
-            row=0, column=0, padx=14, pady=(12, 6), sticky="w")
+            row=0, column=0, padx=4, pady=(0, 6), sticky="w")
 
         side_inner = ctk.CTkScrollableFrame(side, fg_color="transparent")
-        side_inner.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
+        side_inner.grid(row=1, column=0, sticky="nsew", padx=0, pady=(0, 4))
 
         self.embedded_viewer = EmbeddedImageViewer(
             side_inner, on_fullscreen=self.open_lightbox, height=EMBEDDED_MIN_H,
@@ -522,8 +527,8 @@ class MediaGalleryView(ctk.CTkFrame):
 
         nav = ctk.CTkFrame(side_inner, fg_color="transparent")
         nav.pack(fill="x", padx=6, pady=(0, 8))
-        ctk.CTkButton(nav, text="Previous", width=90, command=self.select_previous).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(nav, text="Next", width=90, command=self.select_next).pack(side="left")
+        SecondaryButton(nav, text="Previous", width=90, command=self.select_previous).pack(side="left", padx=(0, 6))
+        SecondaryButton(nav, text="Next", width=90, command=self.select_next).pack(side="left")
         self.file_label = ctk.CTkLabel(nav, text="No image selected", font=FONT_MONO_SM, text_color=APP_TEXT_MUTED)
         self.file_label.pack(side="left", padx=12)
 
@@ -532,11 +537,10 @@ class MediaGalleryView(ctk.CTkFrame):
 
         meta_header = ctk.CTkFrame(side_inner, fg_color="transparent")
         meta_header.pack(fill="x", padx=6, pady=(4, 0))
-        self.metadata_toggle_btn = ctk.CTkButton(
+        self.metadata_toggle_btn = GhostButton(
             meta_header,
             text="▼ Metadata" if not self._metadata_collapsed else "▶ Metadata",
-            width=120, height=28, anchor="w",
-            fg_color="transparent", border_width=1, border_color=APP_BORDER,
+            width=120, height=32, anchor="w",
             command=self._toggle_metadata_panel,
         )
         self.metadata_toggle_btn.pack(side="left")
@@ -555,9 +559,8 @@ class MediaGalleryView(ctk.CTkFrame):
             gps_row, text="", font=FONT_MONO_SM, text_color=APP_TEXT_MUTED, anchor="w",
         )
         self.gps_label.pack(side="left", fill="x", expand=True)
-        self.gps_map_btn = ctk.CTkButton(
-            gps_row, text="Map", width=60, height=26,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER,
+        self.gps_map_btn = GhostButton(
+            gps_row, text="Map", width=60, height=28,
             command=self._open_selected_on_map,
         )
         self.gps_map_btn.pack(side="right")
@@ -565,9 +568,8 @@ class MediaGalleryView(ctk.CTkFrame):
 
         detect_row = ctk.CTkFrame(self.metadata_body, fg_color="transparent")
         detect_row.pack(fill="x", padx=6, pady=(0, 6))
-        ctk.CTkButton(
-            detect_row, text="Re-detect from file", width=140, height=28,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER,
+        GhostButton(
+            detect_row, text="Re-detect from file", width=140, height=32,
             command=self.redetect_metadata,
         ).pack(side="left")
 
@@ -581,7 +583,7 @@ class MediaGalleryView(ctk.CTkFrame):
         save_row = ctk.CTkFrame(self.metadata_body, fg_color="transparent")
         save_row.pack(fill="x", padx=12, pady=(8, 4))
         self.auto_save_var = ctk.BooleanVar(value=self._app_settings.auto_save_metadata)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             save_row, text="Auto-save metadata", variable=self.auto_save_var,
             command=self._on_auto_save_toggle,
         ).pack(side="left")
@@ -589,58 +591,58 @@ class MediaGalleryView(ctk.CTkFrame):
             save_row, text="Edits save automatically", font=FONT_MONO_SM, text_color=APP_TEXT_MUTED,
         )
         self.save_status_label.pack(side="left", padx=12)
-        ctk.CTkButton(
-            save_row, text="Save now", width=90, command=lambda: self.save_metadata(silent=False),
-            fg_color=APP_SUCCESS, hover_color=APP_SUCCESS_HOVER,
+        PrimaryButton(
+            save_row, text="Save now", width=90,
+            command=lambda: self.save_metadata(silent=False),
         ).pack(side="right")
 
         for var in (self.date_var, self.event_meta_var, self.caption_var, self.keywords_var):
             var.trace_add("write", self._on_metadata_field_changed)
 
-        bulk = ctk.CTkFrame(self, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        bulk.grid(row=5, column=0, sticky="ew", pady=(8, 0))
+        bulk_elevated = ElevatedCard(self)
+        bulk_elevated.grid(row=5, column=0, sticky="ew", pady=(8, 0))
+        bulk = bulk_elevated.body
         bulk.grid_columnconfigure(2, weight=1)
 
         ctk.CTkLabel(bulk, text="Bulk rename", font=ctk.CTkFont(size=14, weight="bold")).grid(
-            row=0, column=0, padx=14, pady=12, sticky="w")
+            row=0, column=0, padx=4, pady=8, sticky="w")
         ctk.CTkLabel(bulk, text="Event name", width=80).grid(row=0, column=1, padx=8, sticky="w")
-        ctk.CTkEntry(bulk, textvariable=self.event_var, placeholder_text="LondonTrip").grid(
-            row=0, column=2, padx=8, pady=12, sticky="ew")
-        ctk.CTkCheckBox(bulk, text="Use EXIF date", variable=self.exif_date_var).grid(row=0, column=3, padx=8, pady=12)
-        ctk.CTkButton(bulk, text="Preview rename", command=self.preview_rename, width=120).grid(
-            row=0, column=4, padx=4, pady=12)
-        ctk.CTkButton(bulk, text="Apply rename", command=self.apply_rename,
-                      fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER, width=120).grid(
-            row=0, column=5, padx=(4, 14), pady=12)
+        LabeledEntry(bulk, textvariable=self.event_var, placeholder_text="LondonTrip").grid(
+            row=0, column=2, padx=8, pady=8, sticky="ew")
+        StyledCheckBox(bulk, text="Use EXIF date", variable=self.exif_date_var).grid(row=0, column=3, padx=8, pady=8)
+        SecondaryButton(bulk, text="Preview rename", command=self.preview_rename, width=120).grid(
+            row=0, column=4, padx=4, pady=8)
+        PrimaryButton(bulk, text="Apply rename", command=self.apply_rename, width=120).grid(
+            row=0, column=5, padx=(4, 4), pady=8)
 
         self.rename_preview = ctk.CTkTextbox(
             bulk, height=70, font=FONT_MONO_SM, fg_color=INPUT_BG, text_color=APP_TEXT_MUTED,
         )
-        self.rename_preview.grid(row=1, column=0, columnspan=6, padx=14, pady=(0, 12), sticky="ew")
+        self.rename_preview.grid(row=1, column=0, columnspan=6, padx=4, pady=(0, 8), sticky="ew")
         self.rename_preview.insert("1.0", "Pattern: YYYYMMDD_EventName_001.jpg")
         self.rename_preview.configure(state="disabled")
 
-        sidecar = ctk.CTkFrame(self, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        sidecar.grid(row=6, column=0, sticky="ew", pady=(8, 0))
+        sidecar_elevated = ElevatedCard(self)
+        sidecar_elevated.grid(row=6, column=0, sticky="ew", pady=(8, 0))
+        sidecar = sidecar_elevated.body
         sidecar.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(sidecar, text="Sidecar merge (JSON / XMP)", font=ctk.CTkFont(size=14, weight="bold")).grid(
-            row=0, column=0, padx=14, pady=12, sticky="w")
+            row=0, column=0, padx=4, pady=8, sticky="w")
         self.sidecar_count_label = ctk.CTkLabel(
             sidecar, text="Load a folder to find image + sidecar pairs.",
             font=FONT_MONO_SM, text_color=APP_TEXT_MUTED, anchor="w",
         )
-        self.sidecar_count_label.grid(row=0, column=1, padx=8, pady=12, sticky="ew")
-        ctk.CTkCheckBox(sidecar, text="Delete sidecar after merge", variable=self.delete_sidecar_var).grid(
-            row=0, column=2, padx=8, pady=12)
-        ctk.CTkButton(sidecar, text="Field mapping", width=110, command=self.open_field_mapping).grid(
-            row=0, column=3, padx=4, pady=12)
-        ctk.CTkButton(sidecar, text="Merge selected", width=120, command=self.merge_selected_sidecar).grid(
-            row=0, column=4, padx=4, pady=12)
-        ctk.CTkButton(
+        self.sidecar_count_label.grid(row=0, column=1, padx=8, pady=8, sticky="ew")
+        StyledCheckBox(sidecar, text="Delete sidecar after merge", variable=self.delete_sidecar_var).grid(
+            row=0, column=2, padx=8, pady=8)
+        SecondaryButton(sidecar, text="Field mapping", width=110, command=self.open_field_mapping).grid(
+            row=0, column=3, padx=4, pady=8)
+        SecondaryButton(sidecar, text="Merge selected", width=120, command=self.merge_selected_sidecar).grid(
+            row=0, column=4, padx=4, pady=8)
+        PrimaryButton(
             sidecar, text="Review & merge…", width=140, command=self.open_sidecar_merge_dialog,
-            fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
-        ).grid(row=0, column=5, padx=(4, 14), pady=12)
+        ).grid(row=0, column=5, padx=(4, 4), pady=8)
 
         if self._library_root:
             images = os.path.join(self._library_root, "03_Images")
@@ -652,7 +654,7 @@ class MediaGalleryView(ctk.CTkFrame):
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.pack(fill="x", pady=4)
         ctk.CTkLabel(row, text=label, width=80, anchor="w").pack(side="left")
-        ctk.CTkEntry(row, textvariable=variable, placeholder_text=placeholder).pack(
+        LabeledEntry(row, textvariable=variable, placeholder_text=placeholder).pack(
             side="left", fill="x", expand=True)
 
     def on_view_shown(self):

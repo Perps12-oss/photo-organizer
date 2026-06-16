@@ -116,6 +116,7 @@ class DuplicateView(ctk.CTkFrame):
         self.pre_scan_panel.grid_columnconfigure(0, weight=0, minsize=420)
         self.pre_scan_panel.grid_columnconfigure(1, weight=1)
         self.pre_scan_panel.grid_rowconfigure(0, weight=1)
+        self.pre_scan_panel.grid_rowconfigure(1, weight=0)
 
         self.settings_card = ElevatedCard(self.pre_scan_panel)
         self.settings_card.grid(row=0, column=0, sticky="nsew", padx=(0, SECTION_GAP))
@@ -209,6 +210,30 @@ class DuplicateView(ctk.CTkFrame):
         self.scan_progress.grid_remove()
 
         self.scan_hero = self.scan_progress
+
+        self.pre_scan_footer = ElevatedCard(self.pre_scan_panel)
+        self.pre_scan_footer.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(SECTION_GAP, 0))
+        footer_body = self.pre_scan_footer.body
+        ctk.CTkLabel(
+            footer_body,
+            text="Tip: pick a folder, tune similarity sliders, then Start Scan. "
+                 "Deleted files go to quarantine (undo with Ctrl+Z).",
+            font=CAPTION_FONT,
+            text_color=TEXT_SECONDARY,
+            anchor="w",
+        ).pack(side="left", fill="x", expand=True)
+        footer_actions = ctk.CTkFrame(footer_body, fg_color="transparent")
+        footer_actions.pack(side="right")
+        self.open_scan_folder_btn = SecondaryButton(
+            footer_actions, text="Open Scanned Folder", width=150,
+            command=self._open_scan_folder,
+        )
+        self.open_scan_folder_btn.pack(side="left", padx=(0, CONTROL_GAP))
+        self.open_quarantine_btn = GhostButton(
+            footer_actions, text="Open Quarantine", width=130,
+            command=self._open_quarantine_folder,
+        )
+        self.open_quarantine_btn.pack(side="left")
 
         self.post_scan_panel = ctk.CTkFrame(self, fg_color="transparent")
         self.post_scan_panel.grid_columnconfigure(0, weight=0, minsize=280)
@@ -625,6 +650,26 @@ class DuplicateView(ctk.CTkFrame):
                     (APP_SECONDARY if i == self.focused_image_index else "gray"),
                 )
 
+    def _open_folder_in_explorer(self, folder: str) -> bool:
+        if not folder or not os.path.isdir(folder):
+            messagebox.showinfo("Open folder", "Folder not found or not selected yet.")
+            return False
+        if os.name == "nt":
+            os.startfile(folder)  # type: ignore[attr-defined]
+        else:
+            import subprocess
+            subprocess.Popen(["xdg-open", folder])
+        return True
+
+    def _open_scan_folder(self):
+        self._open_folder_in_explorer(self.folder_path.get().strip())
+
+    def _open_quarantine_folder(self):
+        from operation_journal import QUARANTINE_DIR
+        quarantine = str(QUARANTINE_DIR)
+        os.makedirs(quarantine, exist_ok=True)
+        self._open_folder_in_explorer(quarantine)
+
     def browse_folder(self):
         path = filedialog.askdirectory()
         if path:
@@ -674,6 +719,8 @@ class DuplicateView(ctk.CTkFrame):
         if not locked:
             self.update_delete_btn()
         for btn in self._action_buttons:
+            btn.configure(state=state)
+        for btn in (self.open_scan_folder_btn, self.open_quarantine_btn):
             btn.configure(state=state)
         app = self._get_app()
         if app:
