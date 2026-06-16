@@ -295,7 +295,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 4.1–4.7 + 5.2–5.6 (partial) + 2.3/2.5/2.6 | pass | pass | pass | yes | yes | `7ca4656` |
 | 4.4 tip bar + 5.6 gallery depth | pass | pass | pass | yes | yes | `23eaff1` |
 | Sort footer + inbox status + 5.7 dialogs (partial) | pass | pass | pass | yes | yes | `2d889b0` |
-| 5.7 viewer/lightbox + 6 hex cleanup + gate | pass | pass | pass | yes | yes | *(this commit)* |
+| 5.7 viewer/lightbox + 6 hex cleanup + gate | pass | pass | pass | yes | yes | `09b366a` |
 
 ### Smoke test checklist (Phase 6.1)
 
