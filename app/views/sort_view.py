@@ -13,8 +13,8 @@ from operation_journal import OperationJournal
 from inbox_watcher import load_settings
 from app_settings import load_app_settings, save_app_settings
 from media_viewer import load_oriented_image, pil_to_ctk_image
-from design_system import PageHeader
-from theme import APP_BORDER, APP_CARD, APP_TEXT, APP_TEXT_MUTED, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_GAP, SIDEBAR_TILE_ACTIVE, TEXT_SECONDARY
+from design_system import ElevatedCard, LabeledEntry, PageHeader, PrimaryButton, SecondaryButton, StyledOptionMenu
+from theme import APP_BORDER, APP_CARD, APP_TEXT, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_FONT, SECTION_GAP, SIDEBAR_TILE_ACTIVE, TEXT_SECONDARY
 from ui_components import ORGANIZER_SHORTCUTS
 from views.helpers import truncate_middle
 from i18n import t
@@ -64,8 +64,9 @@ class SortView(ctk.CTkFrame):
             row=0, column=0, sticky="ew", padx=CONTENT_MARGIN, pady=(CONTENT_MARGIN, SECTION_GAP),
         )
 
-        paths_frame = ctk.CTkFrame(self, fg_color=APP_CARD, corner_radius=18, border_width=1, border_color=APP_BORDER)
-        paths_frame.grid(row=1, column=0, padx=CONTENT_MARGIN, pady=8, sticky="ew")
+        paths_card = ElevatedCard(self)
+        paths_card.grid(row=1, column=0, padx=CONTENT_MARGIN, pady=8, sticky="ew")
+        paths_frame = paths_card.body
         paths_frame.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(paths_frame, text="Source folder", font=ctk.CTkFont(size=13, weight="bold")).grid(
@@ -95,9 +96,10 @@ class SortView(ctk.CTkFrame):
         body.grid_rowconfigure(0, weight=0)
         body.grid_rowconfigure(1, weight=1)
 
-        rules_frame = ctk.CTkFrame(body, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        rules_frame.grid(row=0, column=0, padx=(0, 8), pady=(0, 8), sticky="nsew")
-        ctk.CTkLabel(rules_frame, text="Rules", font=ctk.CTkFont(size=14, weight="bold")).pack(
+        rules_card = ElevatedCard(body)
+        rules_card.grid(row=0, column=0, padx=(0, 8), pady=(0, 8), sticky="nsew")
+        rules_frame = rules_card.body
+        ctk.CTkLabel(rules_frame, text="Rules", font=SECTION_FONT).pack(
             anchor="w", padx=14, pady=(14, 10))
 
         self._add_option(rules_frame, "Folder layout", self.layout_var, [m.value for m in LayoutMode])
@@ -142,11 +144,12 @@ class SortView(ctk.CTkFrame):
             values=["rename", "skip", "overwrite"], width=160,
         ).pack(side="left")
 
-        preview_frame = ctk.CTkFrame(body, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        preview_frame.grid(row=0, column=1, padx=(8, 0), sticky="nsew")
+        preview_card = ElevatedCard(body)
+        preview_card.grid(row=0, column=1, padx=(8, 0), sticky="nsew")
+        preview_frame = preview_card.body
         preview_frame.grid_rowconfigure(1, weight=1)
         preview_frame.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(preview_frame, text="Preview", font=ctk.CTkFont(size=14, weight="bold")).grid(
+        ctk.CTkLabel(preview_frame, text="Preview", font=SECTION_FONT).grid(
             row=0, column=0, padx=14, pady=(14, 8), sticky="w")
         self.preview_box = ctk.CTkTextbox(
             preview_frame, font=FONT_MONO_SM, fg_color=INPUT_BG, text_color=APP_TEXT_MUTED,
@@ -156,8 +159,9 @@ class SortView(ctk.CTkFrame):
         self.preview_box.insert("1.0", "Select source and destination, then click Preview Organization.")
         self.preview_box.configure(state="disabled")
 
-        browse_frame = ctk.CTkFrame(body, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        browse_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        browse_card = ElevatedCard(body)
+        browse_card.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        browse_frame = browse_card.body
         browse_frame.grid_columnconfigure(1, weight=1)
         browse_frame.grid_rowconfigure(1, weight=1)
 

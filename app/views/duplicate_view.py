@@ -37,8 +37,9 @@ from theme import (
     SECTION_FONT, SECTION_GAP, TEXT_SECONDARY, WARNING,
 )
 from design_system import (
-    ElevatedCard, LabeledEntry, ModernSlider, PageHeader, PrimaryButton, ResultsCard,
-    ScanProgressCard, SecondaryButton, SectionLabel, StyledCheckBox, StyledOptionMenu,
+    DangerButton, ElevatedCard, GhostButton, LabeledEntry, ModernSlider, PageHeader,
+    PrimaryButton, ResultsCard, ScanProgressCard, SecondaryButton, SectionLabel,
+    StyledCheckBox, StyledOptionMenu,
 )
 from ui_components import DUPLICATE_SHORTCUTS, EmptyState, VirtualGroupList
 from media_viewer import SideBySideCompareDialog
@@ -210,143 +211,123 @@ class DuplicateView(ctk.CTkFrame):
         self.scan_hero = self.scan_progress
 
         self.post_scan_panel = ctk.CTkFrame(self, fg_color="transparent")
-        self.post_scan_panel.grid_columnconfigure(0, weight=0)
+        self.post_scan_panel.grid_columnconfigure(0, weight=0, minsize=280)
         self.post_scan_panel.grid_columnconfigure(1, weight=1)
         self.post_scan_panel.grid_rowconfigure(2, weight=1)
 
-        summary = ctk.CTkFrame(self.post_scan_panel, fg_color=APP_SURFACE, corner_radius=CARD_RADIUS,
-                               border_width=1, border_color=APP_BORDER)
-        summary.grid(row=0, column=0, columnspan=2, sticky="ew", padx=4, pady=(0, 8))
-        sum_inner = ctk.CTkFrame(summary, fg_color="transparent")
-        sum_inner.pack(fill="x", padx=16, pady=12)
+        self.summary_card = ElevatedCard(self.post_scan_panel)
+        self.summary_card.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, SECTION_GAP))
+        sum_inner = self.summary_card.body
         self.summary_label = ctk.CTkLabel(
-            sum_inner, text="", font=FONT_HEADING, text_color=APP_TEXT, anchor="w",
+            sum_inner, text="", font=SECTION_FONT, text_color=APP_TEXT, anchor="w",
         )
         self.summary_label.pack(side="left", fill="x", expand=True)
-        ctk.CTkButton(
-            sum_inner, text="Adjust scan", width=100, height=32,
-            fg_color=APP_BTN_OUTLINE, border_width=1, border_color=APP_BORDER,
-            command=self._show_pre_scan_mode,
+        SecondaryButton(
+            sum_inner, text="Adjust scan", width=100, command=self._show_pre_scan_mode,
         ).pack(side="right", padx=(8, 0))
 
-        self.results_header = ctk.CTkFrame(
-            self.post_scan_panel, fg_color=APP_SURFACE, corner_radius=8,
-            border_width=1, border_color=APP_BORDER,
-        )
-        self.results_header.grid(row=1, column=0, columnspan=2, sticky="ew", padx=4, pady=(0, 8))
+        self.results_header = ElevatedCard(self.post_scan_panel)
+        self.results_header.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, SECTION_GAP))
+        filter_bar = self.results_header.body
         self.dup_group_type_var = ctk.StringVar(value="all")
         self.dup_sort_var = ctk.StringVar(value="count_desc")
         self.dup_path_filter_var = ctk.StringVar(value="")
         self.dup_min_size_var = ctk.StringVar(value="0")
         self.dup_max_size_var = ctk.StringVar(value="0")
-        ctk.CTkLabel(self.results_header, text="Filter", font=FONT_LABEL).pack(side="left", padx=(12, 6), pady=8)
-        ctk.CTkOptionMenu(
-            self.results_header, variable=self.dup_group_type_var,
+        ctk.CTkLabel(filter_bar, text="Filter", font=CAPTION_FONT, text_color=TEXT_SECONDARY).pack(
+            side="left", padx=(0, CONTROL_GAP),
+        )
+        StyledOptionMenu(
+            filter_bar, variable=self.dup_group_type_var,
             values=["all", "exact", "similar", "video"], width=90,
             command=lambda _: self._rebuild_group_sidebar(),
-        ).pack(side="left", padx=4, pady=8)
-        ctk.CTkOptionMenu(
-            self.results_header, variable=self.dup_sort_var,
+        ).pack(side="left", padx=4)
+        StyledOptionMenu(
+            filter_bar, variable=self.dup_sort_var,
             values=["count_desc", "count_asc", "newest", "oldest", "size_desc"], width=110,
             command=lambda _: self._rebuild_group_sidebar(),
-        ).pack(side="left", padx=4, pady=8)
-        ctk.CTkEntry(
-            self.results_header, textvariable=self.dup_path_filter_var,
+        ).pack(side="left", padx=4)
+        LabeledEntry(
+            filter_bar, textvariable=self.dup_path_filter_var,
             placeholder_text="Path contains…", width=120,
-        ).pack(side="left", padx=4, pady=8)
-        ctk.CTkEntry(
-            self.results_header, textvariable=self.dup_min_size_var,
-            placeholder_text="Min KB", width=70,
-        ).pack(side="left", padx=2, pady=8)
-        ctk.CTkEntry(
-            self.results_header, textvariable=self.dup_max_size_var,
-            placeholder_text="Max KB", width=70,
-        ).pack(side="left", padx=2, pady=8)
-        ctk.CTkButton(
-            self.results_header, text="Apply", width=60, command=self._rebuild_group_sidebar,
-        ).pack(side="left", padx=4, pady=8)
+        ).pack(side="left", padx=4)
+        LabeledEntry(
+            filter_bar, textvariable=self.dup_min_size_var, placeholder_text="Min KB", width=70,
+        ).pack(side="left", padx=2)
+        LabeledEntry(
+            filter_bar, textvariable=self.dup_max_size_var, placeholder_text="Max KB", width=70,
+        ).pack(side="left", padx=2)
+        SecondaryButton(filter_bar, text="Apply", width=60, command=self._rebuild_group_sidebar).pack(
+            side="left", padx=4,
+        )
         self.dup_filter_count_label = ctk.CTkLabel(
-            self.results_header, text="", font=FONT_SMALL, text_color=APP_TEXT_MUTED,
+            filter_bar, text="", font=CAPTION_FONT, text_color=TEXT_SECONDARY,
         )
-        self.dup_filter_count_label.pack(side="left", padx=8, pady=8)
-        self.delete_btn = ctk.CTkButton(
-            self.results_header, text="Delete 0 selected",
-            fg_color=APP_DANGER, hover_color=APP_DANGER_HOVER,
-            command=self.confirm_delete, height=36, width=170,
-            font=ctk.CTkFont(size=12, weight="bold"),
+        self.dup_filter_count_label.pack(side="left", padx=8)
+        self.delete_btn = DangerButton(
+            filter_bar, text="Delete 0 selected", command=self.confirm_delete, width=170,
         )
-        self.delete_btn.pack(side="right", padx=16, pady=8)
+        self.delete_btn.pack(side="right", padx=(8, 0))
 
-        self.list_container = ctk.CTkFrame(
-            self.post_scan_panel, width=280, fg_color=APP_SURFACE,
-            corner_radius=CARD_RADIUS, border_width=1, border_color=APP_BORDER,
-        )
-        self.list_container.grid(row=2, column=0, sticky="nsew", padx=(4, 10))
-        self.list_container.grid_rowconfigure(1, weight=1)
-        self.list_container.grid_columnconfigure(0, weight=1)
+        self.list_card = ElevatedCard(self.post_scan_panel)
+        self.list_card.grid(row=2, column=0, sticky="nsew", padx=(0, SECTION_GAP))
+        self.list_card.grid_rowconfigure(1, weight=1)
+        list_body = self.list_card.body
+        list_body.grid_rowconfigure(1, weight=1)
+        list_body.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(
-            self.list_container, text="Duplicate groups", font=FONT_HEADING,
-        ).grid(row=0, column=0, sticky="w", padx=12, pady=(10, 4))
+            list_body, text="Duplicate groups", font=SECTION_FONT, text_color=APP_TEXT,
+        ).grid(row=0, column=0, sticky="w", pady=(0, CONTROL_GAP))
         self.virtual_group_list = VirtualGroupList(
-            self.list_container, on_select=self._on_virtual_group_select,
+            list_body, on_select=self._on_virtual_group_select,
         )
-        self.virtual_group_list.grid(row=1, column=0, sticky="nsew", padx=6, pady=(0, 8))
+        self.virtual_group_list.grid(row=1, column=0, sticky="nsew")
+        self.list_container = self.list_card
 
         self.right_panel = ctk.CTkFrame(self.post_scan_panel, fg_color="transparent")
         self.right_panel.grid(row=2, column=1, sticky="nsew")
         self.right_panel.grid_columnconfigure(0, weight=1)
         self.right_panel.grid_rowconfigure(1, weight=1)
 
-        self.gallery_controls = ctk.CTkFrame(self.right_panel, fg_color=APP_SURFACE,
-                                             corner_radius=8, border_width=1, border_color=APP_BORDER)
-        self.gallery_controls.grid(row=0, column=0, sticky="ew", pady=(0, 6), padx=2)
-        self.btn_smart_best = ctk.CTkButton(
-            self.gallery_controls, text="🤖 Smart Best",
-            command=lambda: self.smart_select("smart_best"),
-            fg_color=APP_PRIMARY, hover_color=APP_PRIMARY_HOVER, text_color=APP_PRIMARY_TEXT, width=110,
+        self.gallery_controls = ElevatedCard(self.right_panel)
+        self.gallery_controls.grid(row=0, column=0, sticky="ew", pady=(0, CONTROL_GAP))
+        gal_bar = self.gallery_controls.body
+        self.btn_smart_best = PrimaryButton(
+            gal_bar, text="Smart Best", command=lambda: self.smart_select("smart_best"), width=110,
         )
-        self.btn_smart_best.pack(side="left", padx=(10, 4), pady=8)
-        self.btn_sel_newest = ctk.CTkButton(
-            self.gallery_controls, text="✓ Keep Newest",
-            command=lambda: self.smart_select("keep_newest"),
-            fg_color=APP_BTN_OUTLINE, border_width=1, border_color=APP_BORDER, width=110,
+        self.btn_smart_best.pack(side="left", padx=(0, 4))
+        self.btn_sel_newest = SecondaryButton(
+            gal_bar, text="Keep Newest", command=lambda: self.smart_select("keep_newest"), width=110,
         )
-        self.btn_sel_newest.pack(side="left", padx=4, pady=8)
-        self.btn_sel_largest = ctk.CTkButton(
-            self.gallery_controls, text="✓ Keep Largest",
-            command=lambda: self.smart_select("keep_largest"),
-            fg_color=APP_BTN_OUTLINE, border_width=1, border_color=APP_BORDER, width=110,
+        self.btn_sel_newest.pack(side="left", padx=4)
+        self.btn_sel_largest = SecondaryButton(
+            gal_bar, text="Keep Largest", command=lambda: self.smart_select("keep_largest"), width=110,
         )
-        self.btn_sel_largest.pack(side="left", padx=4, pady=8)
-        self.btn_sel_oldest = ctk.CTkButton(
-            self.gallery_controls, text="✓ Keep Oldest",
-            command=lambda: self.smart_select("keep_oldest"),
-            fg_color=APP_BTN_GHOST, width=100, text_color=APP_TEXT_MUTED,
+        self.btn_sel_largest.pack(side="left", padx=4)
+        self.btn_sel_oldest = GhostButton(
+            gal_bar, text="Keep Oldest", command=lambda: self.smart_select("keep_oldest"), width=100,
         )
-        self.btn_sel_oldest.pack(side="left", padx=4, pady=8)
-        self.btn_sel_smallest = ctk.CTkButton(
-            self.gallery_controls, text="✓ Keep Smallest",
-            command=lambda: self.smart_select("keep_smallest"),
-            fg_color=APP_BTN_GHOST, width=110, text_color=APP_TEXT_MUTED,
+        self.btn_sel_oldest.pack(side="left", padx=4)
+        self.btn_sel_smallest = GhostButton(
+            gal_bar, text="Keep Smallest", command=lambda: self.smart_select("keep_smallest"), width=110,
         )
-        self.btn_sel_smallest.pack(side="left", padx=4, pady=8)
+        self.btn_sel_smallest.pack(side="left", padx=4)
         self.more_select_var = ctk.StringVar(value="More…")
-        self.more_select_menu = ctk.CTkOptionMenu(
-            self.gallery_controls, variable=self.more_select_var,
+        self.more_select_menu = StyledOptionMenu(
+            gal_bar, variable=self.more_select_var,
             values=["More…", "Select all", "Clear all"],
             width=100, command=self._on_more_autoselect,
         )
-        self.more_select_menu.pack(side="left", padx=4, pady=8)
-        self.compare_btn = ctk.CTkButton(
-            self.gallery_controls, text="Compare Selected", width=130,
-            fg_color=APP_BTN_OUTLINE, border_width=1, border_color=APP_BORDER,
-            command=self.compare_selected, state="disabled",
+        self.more_select_menu.pack(side="left", padx=4)
+        self.compare_btn = SecondaryButton(
+            gal_bar, text="Compare Selected", width=130, command=self.compare_selected,
         )
-        self.compare_btn.pack(side="left", padx=4, pady=8)
+        self.compare_btn.configure(state="disabled")
+        self.compare_btn.pack(side="left", padx=4)
         ctk.CTkLabel(
-            self.gallery_controls, text="↑↓ groups  ←→ images  Space  Enter  ?",
-            font=FONT_MONO_SM, text_color=APP_TEXT_MUTED,
-        ).pack(side="right", padx=10, pady=8)
+            gal_bar, text="↑↓ groups  ←→ images  Space  Enter  ?",
+            font=FONT_MONO_SM, text_color=TEXT_SECONDARY,
+        ).pack(side="right", padx=(8, 0))
         self.btn_sel_all = ctk.CTkButton(self.gallery_controls, text="", width=1, height=1)
         self.btn_clear = ctk.CTkButton(self.gallery_controls, text="", width=1, height=1)
         self._action_buttons = [
@@ -381,16 +362,13 @@ class DuplicateView(ctk.CTkFrame):
         self.gallery_frame.grid_columnconfigure(0, weight=1)
         self.gallery_frame.grid_rowconfigure(0, weight=1)
 
-        self.action_bar = ctk.CTkFrame(
-            self.post_scan_panel, fg_color=APP_SURFACE, corner_radius=8,
-            border_width=1, border_color=APP_BORDER,
-        )
-        self.action_bar.grid(row=3, column=0, columnspan=2, sticky="ew", padx=4, pady=(8, 0))
+        self.action_bar = ElevatedCard(self.post_scan_panel)
+        self.action_bar.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(SECTION_GAP, 0))
         self.status_label = ctk.CTkLabel(
-            self.action_bar, text="Select a folder and click Start Scan",
-            text_color=APP_TEXT_MUTED, font=FONT_BODY,
+            self.action_bar.body, text="Select a folder and click Start Scan",
+            text_color=TEXT_SECONDARY, font=BODY_FONT,
         )
-        self.status_label.pack(side="left", padx=20, pady=12)
+        self.status_label.pack(side="left")
 
         self.post_scan_panel.grid_remove()
         self._refresh_recent_chips()
@@ -444,7 +422,7 @@ class DuplicateView(ctk.CTkFrame):
     def _show_post_scan_mode(self, summary_text: str = ""):
         self._ui_mode = "post"
         self.pre_scan_panel.grid_remove()
-        self.post_scan_panel.grid(row=1, column=0, sticky="nsew")
+        self.post_scan_panel.grid(row=1, column=0, sticky="nsew", padx=CONTENT_MARGIN, pady=(0, CONTENT_MARGIN))
         self.grid_rowconfigure(1, weight=1)
         if summary_text:
             self.summary_label.configure(text=summary_text)
@@ -493,10 +471,8 @@ class DuplicateView(ctk.CTkFrame):
             label = os.path.basename(path) or path
             if len(label) > 28:
                 label = label[:25] + "…"
-            ctk.CTkButton(
-                self.recent_row, text=label, height=28,
-                fg_color=APP_BTN_GHOST, text_color=APP_TEXT_MUTED,
-                command=lambda p=path: self._apply_recent_folder(p),
+            GhostButton(
+                self.recent_row, text=label, command=lambda p=path: self._apply_recent_folder(p),
             ).pack(side="left", padx=4)
 
     def _apply_recent_folder(self, path: str):

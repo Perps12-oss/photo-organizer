@@ -12,6 +12,7 @@ from theme import (
     ACCENT,
     ACCENT_HOVER,
     APP_BTN_GHOST,
+    APP_DANGER_HOVER,
     APP_PRIMARY_TEXT,
     BODY_FONT,
     BORDER,
@@ -141,6 +142,22 @@ class GhostButton(ctk.CTkButton):
             fg_color=APP_BTN_GHOST,
             hover_color=INPUT_BG,
             text_color=TEXT_SECONDARY,
+            **kwargs,
+        )
+
+
+class DangerButton(ctk.CTkButton):
+    def __init__(self, parent, text: str = "", command=None, **kwargs):
+        super().__init__(
+            parent,
+            text=text,
+            command=command,
+            height=kwargs.pop("height", 40),
+            corner_radius=BTN_RADIUS,
+            font=BODY_FONT,
+            fg_color=ERROR,
+            hover_color=APP_DANGER_HOVER,
+            text_color=TEXT_PRIMARY,
             **kwargs,
         )
 
@@ -347,7 +364,14 @@ class ResultsCard(ElevatedCard):
         self.status_canvas = tk.Canvas(
             self.icon_frame, width=72, height=72, bg=SURFACE_BG, highlightthickness=0, bd=0,
         )
+        self._success_badge = ctk.CTkFrame(
+            self.icon_frame, width=72, height=72, corner_radius=36, fg_color=SUCCESS,
+        )
+        self._check_img = load_icon("check", 32, TEXT_PRIMARY)
+        self._success_icon = ctk.CTkLabel(self._success_badge, text="", image=self._check_img)
+        self._success_icon.place(relx=0.5, rely=0.5, anchor="center")
         self.status_canvas.pack()
+        self._success_badge.pack_forget()
         self.title_label = ctk.CTkLabel(
             self.center, text="Ready to scan", font=SECTION_FONT, text_color=TEXT_PRIMARY,
         )
@@ -374,6 +398,8 @@ class ResultsCard(ElevatedCard):
             c.create_line(22, 38, 32, 48, 48, 28, fill=TEXT_PRIMARY, width=3, capstyle=tk.ROUND)
 
     def show_idle(self, subtitle: str = "Select a folder and start a scan."):
+        self._success_badge.pack_forget()
+        self.status_canvas.pack()
         self._draw_circle_icon(INPUT_BG, draw_check=False)
         c = self.status_canvas
         c.create_text(36, 36, text="?", fill=TEXT_SECONDARY, font=("Segoe UI", 20))
@@ -390,7 +416,8 @@ class ResultsCard(ElevatedCard):
         action_text: Optional[str] = None,
         action: Optional[Callable] = None,
     ):
-        self._draw_circle_icon(SUCCESS, draw_check=True)
+        self.status_canvas.pack_forget()
+        self._success_badge.pack()
         self.title_label.configure(text=title)
         self.subtitle_label.configure(text=subtitle)
         self._set_stats(stats or [])
@@ -402,6 +429,8 @@ class ResultsCard(ElevatedCard):
             self.action_frame.pack_forget()
 
     def show_error(self, title: str, subtitle: str):
+        self._success_badge.pack_forget()
+        self.status_canvas.pack()
         self._draw_circle_icon(ERROR, draw_check=False)
         self.title_label.configure(text=title)
         self.subtitle_label.configure(text=subtitle)

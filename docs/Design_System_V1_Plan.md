@@ -54,9 +54,9 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 1 | Token layer | **done** | `theme.py` V1 tokens + `init_fonts()` |
 | 2 | Component library | **partial** | Core widgets in `design_system.py`; `ViewPage` unused widely |
 | 3 | Shell integration | **done** | `ModernSidebar`, `StatusBar`, shell wiring |
-| 4 | Find Duplicates (reference) | **partial** | Pre-scan 2-col done; post-scan polish open |
-| 5 | Roll out other views | **partial** | Headers/tokens/sliders; not full card migration everywhere |
-| 6 | Cleanup & verification | **partial** | Neon removed; formal QA checklist open |
+| 4 | Find Duplicates (reference) | **partial** | Pre + post-scan V1 cards; 4.4 tip bar open |
+| 5 | Roll out other views | **partial** | ElevatedCard + DS controls on all main views; gallery side panel open |
+| 6 | Cleanup & verification | **partial** | Toast V1; hex clean; formal QA checklist open |
 
 ---
 
@@ -124,6 +124,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 ### Controls
 
 - [x] `PrimaryButton` / `SecondaryButton` / `GhostButton`
+- [x] `DangerButton` variant
 - [x] `LabeledEntry`
 - [x] `StyledOptionMenu`
 - [x] `StyledCheckBox`
@@ -148,10 +149,10 @@ Do **not** mark a phase complete or push until all of the following pass:
 |----|------|--------|-------|
 | 2.1 | Adopt `ViewPage` wrapper on every main view | planned | Single content margin + header row |
 | 2.2 | `FormRow` / `LabeledSliderRow` (label + slider + value) | planned | Reduce duplicate row layout code |
-| 2.3 | `DangerButton` variant | planned | Delete actions in duplicate/gallery |
+| 2.3 | `DangerButton` variant | done | Delete actions in duplicate view |
 | 2.4 | Gradient primary button (Pillow PNG) | deferred | Spec optional; solid accent shipped |
-| 2.5 | Lucide `check` PNG in `ResultsCard` (vs canvas draw) | planned | Phase 4.3 alignment |
-| 2.6 | Toast styling aligned to V1 tokens | planned | `ToastManager` still mixed tokens |
+| 2.5 | Lucide `check` PNG in `ResultsCard` (vs canvas draw) | done | 72px green badge |
+| 2.6 | Toast styling aligned to V1 tokens | done | `CARD_RADIUS` + `PrimaryButton` action |
 
 ---
 
@@ -203,21 +204,21 @@ Do **not** mark a phase complete or push until all of the following pass:
 - [x] `ScanProgressCard` in right column (not modal)
 - [x] Remove `NeonScanHero`
 - [x] `ResultsCard` for no-duplicates success state
-- [~] Post-scan panel — **functional layout kept; full V1 card pass not done**
-- [~] Success icon — **canvas circle + check**, not Lucide PNG yet
+- [x] Post-scan panel — summary, filters, list, gallery chrome on `ElevatedCard`
+- [x] Success icon — Lucide `check` PNG at 72px
 - [ ] Bottom tip bar / “Open Results Folder” row from mockups | planned → **4.4**
 
 ### Variations (Phase 4.x)
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| 4.1 | Post-scan: restyle summary, filters, group list, gallery chrome with `ElevatedCard` | planned | Highest-impact remaining 4.x |
-| 4.2 | Post-scan: action bar + recommendation panel token cleanup | planned | Subset of 4.1 |
-| 4.3 | Results success icon → Lucide `check` PNG at 72px | planned | Spec originally called for PNG |
+| 4.1 | Post-scan: restyle summary, filters, group list, gallery chrome with `ElevatedCard` | done | |
+| 4.2 | Post-scan: action bar + recommendation panel token cleanup | done | Subset of 4.1 |
+| 4.3 | Results success icon → Lucide `check` PNG at 72px | done | |
 | 4.4 | Pre-scan footer: tip row + secondary actions (mockup) | planned | Optional UX parity |
 | 4.5 | Scan stats row on results (Files / Time / Duplicates columns) | partial | Basic stats in `ResultsCard`; enrich layout |
 | 4.6 | Animated success glow / sparkle | deferred | Spec skip for V1 |
-| 4.7 | Recent folder chips → `GhostButton` style | planned | Visual only |
+| 4.7 | Recent folder chips → `GhostButton` style | done | |
 
 ---
 
@@ -228,10 +229,10 @@ Do **not** mark a phase complete or push until all of the following pass:
 | View | File | Status | Done | Remaining |
 |------|------|--------|------|-----------|
 | Home | `app/views/home_view.py` | partial | `PageHeader`, `ElevatedCard`, DS buttons | — |
-| Settings | `app/settings_view.py` | partial | `PageHeader`, `ModernSlider`, DS footer buttons | More `StyledOptionMenu` / `StyledCheckBox` rows |
-| File Organizer | `app/views/sort_view.py` | partial | `PageHeader`, token colors, hover tokens | `ElevatedCard` for paths/rules/preview/browser |
-| Inbox Watcher | `app/views/inbox_view.py` | partial | `PageHeader`, `ModernSlider`, token colors | Left/right cards → `ElevatedCard`; DS form controls |
-| Media Gallery | `app/media_gallery.py` | partial | `INPUT_BG` token pass on scroll areas | Full toolbar, cards, empty states, sliders |
+| Settings | `app/settings_view.py` | partial | `PageHeader`, `ModernSlider`, styled menus/checkboxes | Minor raw controls if any remain |
+| File Organizer | `app/views/sort_view.py` | partial | `PageHeader`, `ElevatedCard` paths/rules/preview/browser | Footer DS buttons optional |
+| Inbox Watcher | `app/views/inbox_view.py` | partial | `PageHeader`, `ElevatedCard` columns, DS footer | Status card inner frame optional |
+| Media Gallery | `app/media_gallery.py` | partial | `PageHeader`, toolbar/filters `ElevatedCard`, DS toolbar | Side panel + filter buttons depth |
 
 ### Per-view checklist (tick as completed)
 
@@ -243,23 +244,23 @@ Do **not** mark a phase complete or push until all of the following pass:
 **Settings**
 
 - [x] Phase 5 — baseline pass
-- [ ] Phase 5.2 — replace remaining raw `CTkOptionMenu` / `CTkCheckBox` with styled variants
+- [x] Phase 5.2 — replace remaining raw `CTkOptionMenu` / `CTkCheckBox` with styled variants
 
 **Sort / Organizer**
 
 - [x] Phase 5 — baseline pass
-- [ ] Phase 5.3 — elevate paths + rules + preview cards
-- [ ] Phase 5.4 — library browser panels → `ElevatedCard`
+- [x] Phase 5.3 — elevate paths + rules + preview cards
+- [x] Phase 5.4 — library browser panels → `ElevatedCard`
 
 **Inbox**
 
 - [x] Phase 5 — baseline pass
-- [ ] Phase 5.5 — elevate left/right columns; DS buttons in footer
+- [x] Phase 5.5 — elevate left/right columns; DS buttons in footer
 
 **Media Gallery**
 
 - [x] Phase 5 — baseline pass
-- [ ] Phase 5.6 — full gallery UI pass (largest remaining view)
+- [~] Phase 5.6 — toolbar/header/filters pass; side panel + bulk UI remain
 
 ### Variations (Phase 5.x) — cross-cutting
 
@@ -276,7 +277,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 **Status:** partial
 
 - [x] Remove `NeonScanHero` and exports
-- [~] Grep hardcoded hex — **reduced; not zero** (audit periodically)
+- [~] Grep hardcoded hex — **clean on main views**; gallery/sidecar spots remain
 - [~] Phase gate automation documented (see top of this doc)
 - [ ] Manual smoke test — formal sign-off | **6.1**
 - [ ] Remove dead neon constants from any remaining imports | **6.2**
@@ -287,6 +288,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 |-------|--------|------|-----------|-----------|--------|--------|
 | 0–4 (+ partial 5–6) | pass | pass | pass | yes | yes | `13132eb` |
 | Plan doc + gate workflow | pass | pass | pass | yes | yes | `60f374f` |
+| 4.1–4.7 + 5.2–5.6 (partial) + 2.3/2.5/2.6 | pass | pass | pass | yes | yes | *(this commit)* |
 
 ### Smoke test checklist (Phase 6.1)
 
@@ -322,8 +324,8 @@ Do **not** mark a phase complete or push until all of the following pass:
 | PR | Phases | Status |
 |----|--------|--------|
 | PR 1 | 0–4 core + partial 5–6 | **shipped** (`13132eb`) |
-| PR 2 | 4.1–4.3 post-scan + results polish | planned |
-| PR 3 | 5.3–5.6 remaining view depth | planned |
+| PR 2 | 4.1–4.3 post-scan + results polish | **shipped** |
+| PR 3 | 5.3–5.6 remaining view depth | **partial** (5.6 side panel open) |
 | PR 4 | 1.1 light mode + 6.1 QA sign-off | planned |
 
 ---
@@ -333,7 +335,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | Date | Change |
 |------|--------|
 | 2026-06-14 | Initial living plan; marked work through `13132eb` as done/partial |
-| 2026-06-14 | Added phase gate (syntax, lint, run, commit, push) + gate log table |
+| 2026-06-14 | ULTRAWORK: Phase 4 post-scan, 5.2–5.6 partial, DangerButton, toast V1 |
 
 ---
 

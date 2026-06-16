@@ -65,9 +65,11 @@ from video_thumbs import extract_video_thumbnail, ffmpeg_available, is_video_fil
 from smart_playlists import PlaylistStore, SmartPlaylist
 from gps_utils import open_in_browser, osm_url
 from takeout_import import discover_takeout_albums, find_takeout_sidecar, import_takeout_album
+from design_system import ElevatedCard, PageHeader, PrimaryButton, SecondaryButton, StyledCheckBox, StyledOptionMenu
 from theme import (
     APP_ACCENT, APP_ACCENT_HOVER, APP_BORDER, APP_CARD, APP_SECONDARY, APP_SECONDARY_HOVER,
-    APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT_MUTED, FONT_MONO_SM, GALLERY_SORT_OPTIONS, INPUT_BG,
+    APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, CONTENT_MARGIN, FONT_MONO_SM,
+    GALLERY_SORT_OPTIONS, INPUT_BG, SECTION_GAP,
 )
 from ui_components import EmptyState, GALLERY_SHORTCUTS
 from i18n import t
@@ -372,35 +374,34 @@ class MediaGalleryView(ctk.CTkFrame):
         self._compare_anchor: Optional[str] = None
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(3, weight=1)
 
-        ctk.CTkLabel(self, text="Media Gallery", font=ctk.CTkFont(size=24, weight="bold")).grid(
-            row=0, column=0, padx=4, pady=(0, 4), sticky="w")
-        ctk.CTkLabel(
+        PageHeader(
             self,
-            text="Browse, rate, filter by tags, edit EXIF metadata, and view photos in-app. "
-                 "Duplicate review keeps its own comparison gallery.",
-            text_color=APP_TEXT_MUTED, font=ctk.CTkFont(size=13), wraplength=960, justify="left",
-        ).grid(row=1, column=0, sticky="w", pady=(0, 10))
+            title="Media Gallery",
+            subtitle="Browse, rate, filter by tags, edit EXIF metadata, and view photos in-app. "
+                     "Duplicate review keeps its own comparison gallery.",
+        ).grid(row=0, column=0, sticky="ew", pady=(0, SECTION_GAP))
 
-        toolbar = ctk.CTkFrame(self, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        toolbar.grid(row=2, column=0, sticky="ew", pady=(0, 8))
+        toolbar_card = ElevatedCard(self)
+        toolbar_card.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+        toolbar = toolbar_card.body
         toolbar.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(toolbar, text="Folder", font=ctk.CTkFont(size=13, weight="bold")).grid(
             row=0, column=0, padx=12, pady=12, sticky="w")
         ctk.CTkEntry(toolbar, textvariable=self.folder_var, placeholder_text="Photo folder or event album").grid(
             row=0, column=1, padx=8, pady=12, sticky="ew")
-        ctk.CTkButton(toolbar, text="Browse", width=80, command=self.browse_folder).grid(row=0, column=2, padx=4, pady=12)
-        ctk.CTkButton(toolbar, text="Load", width=70, fg_color=APP_ACCENT, text_color="#0a0a12",
-                      hover_color=APP_ACCENT_HOVER, command=self.load_folder).grid(row=0, column=3, padx=4, pady=12)
-        ctk.CTkButton(toolbar, text="Library", width=70, command=self.open_library_root).grid(row=0, column=4, padx=4, pady=12)
-        ctk.CTkCheckBox(toolbar, text="Subfolders", variable=self.recursive_var).grid(row=0, column=5, padx=8, pady=12)
+        SecondaryButton(toolbar, text="Browse", width=80, command=self.browse_folder).grid(row=0, column=2, padx=4, pady=12)
+        PrimaryButton(toolbar, text="Load", width=70, command=self.load_folder).grid(row=0, column=3, padx=4, pady=12)
+        SecondaryButton(toolbar, text="Library", width=70, command=self.open_library_root).grid(row=0, column=4, padx=4, pady=12)
+        StyledCheckBox(toolbar, text="Subfolders", variable=self.recursive_var).grid(row=0, column=5, padx=8, pady=12)
         self.count_label = ctk.CTkLabel(toolbar, text="", text_color=APP_TEXT_MUTED)
         self.count_label.grid(row=0, column=6, padx=12, pady=12)
 
-        filters = ctk.CTkFrame(self, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        filters.grid(row=3, column=0, sticky="ew", pady=(0, 8))
+        filters_card = ElevatedCard(self)
+        filters_card.grid(row=2, column=0, sticky="ew", pady=(0, 8))
+        filters = filters_card.body
         filters.grid_columnconfigure(5, weight=1)
 
         ctk.CTkLabel(filters, text="Tag", width=40).grid(row=0, column=0, padx=(12, 4), pady=10)
@@ -477,7 +478,7 @@ class MediaGalleryView(ctk.CTkFrame):
         self.ocr_status_label.grid(row=3, column=0, columnspan=12, padx=12, pady=(0, 10), sticky="w")
 
         body = ctk.CTkFrame(self, fg_color="transparent")
-        body.grid(row=4, column=0, sticky="nsew")
+        body.grid(row=3, column=0, sticky="nsew")
         body.grid_columnconfigure(0, weight=3)
         body.grid_columnconfigure(1, weight=2)
         body.grid_rowconfigure(0, weight=1)

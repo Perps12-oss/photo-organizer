@@ -121,7 +121,7 @@ class SettingsView(ctk.CTkFrame):
         row = ctk.CTkFrame(section.body, fg_color="transparent")
         row.pack(fill="x", pady=4)
         ctk.CTkLabel(row, text="Theme", width=140, anchor="w").pack(side="left")
-        ctk.CTkOptionMenu(
+        StyledOptionMenu(
             row, variable=self.appearance_var, values=list(APPEARANCE_MODES),
             width=200, command=self._on_theme_selected,
         ).pack(side="left")
@@ -134,7 +134,7 @@ class SettingsView(ctk.CTkFrame):
         row3 = ctk.CTkFrame(section.body, fg_color="transparent")
         row3.pack(fill="x", pady=4)
         ctk.CTkLabel(row3, text="Language", width=140, anchor="w").pack(side="left")
-        ctk.CTkOptionMenu(
+        StyledOptionMenu(
             row3, variable=self.locale_var, values=["en", "de", "fr", "es"], width=120,
         ).pack(side="left")
 
@@ -147,7 +147,7 @@ class SettingsView(ctk.CTkFrame):
 
         row1 = ctk.CTkFrame(section.body, fg_color="transparent")
         row1.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row1, text="Auto-save metadata edits", variable=self.auto_save_var,
         ).pack(side="left")
 
@@ -165,19 +165,19 @@ class SettingsView(ctk.CTkFrame):
         row3 = ctk.CTkFrame(section.body, fg_color="transparent")
         row3.pack(fill="x", pady=4)
         ctk.CTkLabel(row3, text="Default sort", width=140, anchor="w").pack(side="left")
-        ctk.CTkOptionMenu(
+        StyledOptionMenu(
             row3, variable=self.gallery_sort_var, values=list(GALLERY_SORT_OPTIONS), width=200,
         ).pack(side="left")
 
         row4 = ctk.CTkFrame(section.body, fg_color="transparent")
         row4.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row4, text="Start with metadata panel collapsed", variable=self.metadata_collapsed_var,
         ).pack(side="left")
 
         row5 = ctk.CTkFrame(section.body, fg_color="transparent")
         row5.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row5, text="Auto-build OCR search index when a folder loads",
             variable=self.auto_ocr_var,
         ).pack(side="left")
@@ -216,17 +216,17 @@ class SettingsView(ctk.CTkFrame):
 
         row2 = ctk.CTkFrame(section.body, fg_color="transparent")
         row2.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(row2, text="Start watcher on app launch", variable=self.watcher_start_launch_var).pack(
+        StyledCheckBox(row2, text="Start watcher on app launch", variable=self.watcher_start_launch_var).pack(
             side="left", padx=(0, 16),
         )
-        ctk.CTkCheckBox(row2, text="Minimize to system tray on close", variable=self.watcher_tray_var).pack(side="left")
+        StyledCheckBox(row2, text="Minimize to system tray on close", variable=self.watcher_tray_var).pack(side="left")
 
         row3 = ctk.CTkFrame(section.body, fg_color="transparent")
         row3.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(row3, text="Scan subfolders recursively", variable=self.watcher_recursive_var).pack(
+        StyledCheckBox(row3, text="Scan subfolders recursively", variable=self.watcher_recursive_var).pack(
             side="left", padx=(0, 16),
         )
-        ctk.CTkCheckBox(row3, text="Run at Windows login", variable=self.watcher_login_var).pack(side="left")
+        StyledCheckBox(row3, text="Run at Windows login", variable=self.watcher_login_var).pack(side="left")
 
         if self._on_open_inbox:
             ctk.CTkButton(
@@ -245,13 +245,13 @@ class SettingsView(ctk.CTkFrame):
         row0 = ctk.CTkFrame(section.body, fg_color="transparent")
         row0.pack(fill="x", pady=4)
         ctk.CTkLabel(row0, text="Default scan depth", width=140, anchor="w").pack(side="left")
-        ctk.CTkOptionMenu(
+        StyledOptionMenu(
             row0, variable=self.default_scan_depth_var, values=list(SCAN_DEPTH_OPTIONS), width=160,
         ).pack(side="left")
 
         row1 = ctk.CTkFrame(section.body, fg_color="transparent")
         row1.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row1,
             text="Scan for duplicates when the PC is idle (no mouse/keyboard, tray, or locked)",
             variable=self.idle_scan_var,
@@ -307,11 +307,11 @@ class SettingsView(ctk.CTkFrame):
 
         row7 = ctk.CTkFrame(section.body, fg_color="transparent")
         row7.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row7, text="Skip idle scan on battery (when psutil available)",
             variable=self.idle_skip_battery_var,
         ).pack(side="left", padx=(0, 16))
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row7, text="Only scan when workstation is locked",
             variable=self.idle_locked_only_var,
         ).pack(side="left")
@@ -351,10 +351,10 @@ class SettingsView(ctk.CTkFrame):
         section.pack(fill="x", pady=(0, PAD_MD))
         row1 = ctk.CTkFrame(section.body, fg_color="transparent")
         row1.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row1, text="Create snapshot before duplicate delete", variable=self.snapshot_before_delete_var,
         ).pack(side="left", padx=(0, 16))
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row1, text="Use SQLite media index when loading gallery", variable=self.use_media_index_var,
         ).pack(side="left")
 
@@ -367,7 +367,7 @@ class SettingsView(ctk.CTkFrame):
 
         snap_row = ctk.CTkFrame(section.body, fg_color="transparent")
         snap_row.pack(fill="x", pady=4)
-        self._snapshot_menu = ctk.CTkOptionMenu(
+        self._snapshot_menu = StyledOptionMenu(
             snap_row, values=["(no snapshots)"], width=320,
         )
         self._snapshot_menu.pack(side="left", padx=(0, 8))
@@ -442,7 +442,7 @@ class SettingsView(ctk.CTkFrame):
         section.pack(fill="x", pady=(0, PAD_MD))
         row1 = ctk.CTkFrame(section.body, fg_color="transparent")
         row1.pack(fill="x", pady=4)
-        ctk.CTkCheckBox(
+        StyledCheckBox(
             row1, text="Enable local AI (Ollama)", variable=self.enable_local_ai_var,
         ).pack(side="left")
         row2 = ctk.CTkFrame(section.body, fg_color="transparent")

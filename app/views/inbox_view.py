@@ -9,8 +9,8 @@ from inbox_watcher import (
     load_settings, save_settings, inbox_path,
     set_windows_autostart, is_windows_autostart_enabled,
 )
-from design_system import ModernSlider, PageHeader, SecondaryButton
-from theme import APP_ACCENT, APP_BORDER, APP_CARD, APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_GAP, SIDEBAR_TILE_ACTIVE
+from design_system import ElevatedCard, ModernSlider, PageHeader, PrimaryButton, SecondaryButton, StyledCheckBox, StyledOptionMenu
+from theme import APP_ACCENT, APP_BORDER, APP_CARD, APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_FONT, SECTION_GAP, SIDEBAR_TILE_ACTIVE, WARNING
 from ui_components import INBOX_SHORTCUTS
 from views.helpers import truncate_middle
 from i18n import t
@@ -58,10 +58,11 @@ class InboxWatcherView(ctk.CTkFrame):
         body.grid_columnconfigure(1, weight=1)
         body.grid_rowconfigure(0, weight=1)
 
-        left = ctk.CTkFrame(body, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        left.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
-        ctk.CTkLabel(left, text="Paths & rules", font=ctk.CTkFont(size=14, weight="bold")).pack(
-            anchor="w", padx=14, pady=(14, 10))
+        left_card = ElevatedCard(body)
+        left_card.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
+        left = left_card.body
+        ctk.CTkLabel(left, text="Paths & rules", font=SECTION_FONT).pack(
+            anchor="w", pady=(0, 10))
 
         self._path_row(left, "Library root", self.library_root, self.browse_library)
         self._path_row(left, "Inbox subfolder", self.inbox_rel, None, entry_only=True)
@@ -90,15 +91,16 @@ class InboxWatcherView(ctk.CTkFrame):
 
         opts = ctk.CTkFrame(left, fg_color="transparent")
         opts.pack(fill="x", padx=14, pady=(8, 14))
-        ctk.CTkCheckBox(opts, text="Start watcher when app opens", variable=self.start_on_launch_var).pack(anchor="w", pady=2)
-        ctk.CTkCheckBox(opts, text="Run Photo Organizer at Windows login", variable=self.run_at_login_var).pack(anchor="w", pady=2)
-        ctk.CTkCheckBox(opts, text="Minimize to tray when closing window", variable=self.minimize_tray_var).pack(anchor="w", pady=2)
+        StyledCheckBox(opts, text="Start watcher when app opens", variable=self.start_on_launch_var).pack(anchor="w", pady=2)
+        StyledCheckBox(opts, text="Run Photo Organizer at Windows login", variable=self.run_at_login_var).pack(anchor="w", pady=2)
+        StyledCheckBox(opts, text="Minimize to tray when closing window", variable=self.minimize_tray_var).pack(anchor="w", pady=2)
         if not TrayController.available():
             ctk.CTkLabel(opts, text="Install pystray for system tray: pip install pystray",
                          text_color="#aa8844", font=ctk.CTkFont(size=11)).pack(anchor="w", pady=(4, 0))
 
-        right = ctk.CTkFrame(body, fg_color=APP_CARD, corner_radius=10, border_width=1, border_color=APP_BORDER)
-        right.grid(row=0, column=1, padx=(8, 0), sticky="nsew")
+        right_card = ElevatedCard(body)
+        right_card.grid(row=0, column=1, padx=(8, 0), sticky="nsew")
+        right = right_card.body
         right.grid_rowconfigure(3, weight=1)
         right.grid_columnconfigure(0, weight=1)
 
@@ -161,15 +163,14 @@ class InboxWatcherView(ctk.CTkFrame):
         footer.grid(row=2, column=0, padx=CONTENT_MARGIN, pady=(12, CONTENT_MARGIN))
         self.processed_label = ctk.CTkLabel(footer, text="Files processed this session: 0", text_color=APP_TEXT_MUTED)
         self.processed_label.pack(side="left", padx=(0, 20))
-        ctk.CTkButton(footer, text="Save settings", command=self.save_settings_only, width=120).pack(side="left", padx=4)
-        ctk.CTkButton(
-            footer, text="Create library folders", command=self.create_library,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER, width=160,
-        ).pack(side="left", padx=4)
-        self.watch_btn = ctk.CTkButton(
-            footer, text="Start Watcher", width=160, height=40,
-            fg_color=APP_SUCCESS, hover_color=APP_SUCCESS_HOVER, command=self.toggle_watcher,
+        SecondaryButton(footer, text="Save settings", command=self.save_settings_only, width=120).pack(side="left", padx=4)
+        SecondaryButton(footer, text="Create library folders", command=self.create_library, width=160).pack(
+            side="left", padx=4,
         )
+        self.watch_btn = PrimaryButton(
+            footer, text="Start Watcher", width=160, command=self.toggle_watcher,
+        )
+        self.watch_btn.configure(fg_color=APP_SUCCESS, hover_color=APP_SUCCESS_HOVER)
         self.watch_btn.pack(side="left", padx=(12, 0))
 
     def _path_row(self, parent, label, variable, browse_cmd, entry_only=False):
@@ -184,7 +185,7 @@ class InboxWatcherView(ctk.CTkFrame):
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.pack(fill="x", padx=14, pady=4)
         ctk.CTkLabel(row, text=label, width=100, anchor="w").pack(side="left")
-        ctk.CTkOptionMenu(row, variable=variable, values=values, width=280).pack(side="left", fill="x", expand=True)
+        StyledOptionMenu(row, variable=variable, values=values, width=280).pack(side="left", fill="x", expand=True)
 
     def _update_poll_label(self, *_):
         self.poll_label.configure(text=f"{self.poll_var.get():.0f}s")

@@ -8,7 +8,7 @@ from typing import Callable, Optional
 import customtkinter as ctk
 
 from assets import load_icon
-from design_system import NAV_ICON_MAP, ElevatedCard
+from design_system import NAV_ICON_MAP, ElevatedCard, PrimaryButton
 from theme import (
     ACCENT,
     ACCENT_HOVER,
@@ -29,6 +29,7 @@ from theme import (
     BTN_INACTIVE_HOVER,
     CAPTION_FONT,
     CARD_PADDING,
+    CARD_RADIUS,
     FONT_BODY,
     FONT_HEADING,
     FONT_LOGO,
@@ -362,7 +363,7 @@ class ToastManager:
         except Exception:
             pass
         frame = ctk.CTkFrame(
-            self._window, fg_color=bg, corner_radius=8,
+            self._window, fg_color=bg, corner_radius=CARD_RADIUS,
             border_width=1, border_color=border,
         )
         frame.pack(padx=2, pady=2)
@@ -371,9 +372,8 @@ class ToastManager:
         self._label = ctk.CTkLabel(row, text=message, text_color=text, font=FONT_BODY)
         self._label.pack(side="left", padx=(0, 12))
         if action_text and action_callback:
-            ctk.CTkButton(
+            PrimaryButton(
                 row, text=action_text, width=80, height=28,
-                fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
                 command=lambda: (action_callback(), self._dismiss_current()),
             ).pack(side="left")
         self._position_window()
