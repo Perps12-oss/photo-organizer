@@ -18,7 +18,7 @@ from services.file_operation_service import FileOperationService
 from services.metadata_provider import MetadataProvider
 from i18n import set_locale, t
 from theme import (
-    APP_BG, init_fonts, SIDEBAR_WIDTH,
+    init_fonts, SIDEBAR_WIDTH, CURRENT_PRESET_ID, WINDOW_BG,
     WINDOW_DEFAULT, WINDOW_MIN_H, WINDOW_MIN_W,
 )
 from theme_manager import GradientBackground, apply_from_settings, apply_preset_tokens, refresh_shell
@@ -43,10 +43,15 @@ class PhotoOrganizerApp(ctk.CTk):
         self.minsize(WINDOW_MIN_W, WINDOW_MIN_H)
         init_fonts(self)
         apply_from_settings()
-        self._bg_layer = GradientBackground(self)
-        self._bg_layer.place(x=0, y=0, relwidth=1, relheight=1)
-        self._bg_layer.lower()
-        self.configure(fg_color=APP_BG)
+        self.configure(fg_color=WINDOW_BG)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        self._bg_layer = GradientBackground(self, preset_id=CURRENT_PRESET_ID)
+        self._bg_layer.grid(row=0, column=0, sticky="nsew")
+        self._bg_layer.grid_columnconfigure(1, weight=1)
+        self._bg_layer.grid_rowconfigure(0, weight=1)
+        self._bg_layer.grid_rowconfigure(1, weight=0)
         self._start_minimized = start_minimized
         self._auto_watch = auto_watch
         self._tray_hidden = False
@@ -73,10 +78,6 @@ class PhotoOrganizerApp(ctk.CTk):
             self.tray.start()
 
         # Grid layout: sidebar | main ; status bar spans both columns
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=0)
-
         # Sidebar Navigation
         nav_specs = [
             ("home", t("nav.home"), self.show_home_frame),
@@ -86,19 +87,19 @@ class PhotoOrganizerApp(ctk.CTk):
             ("inbox", t("nav.inbox"), self.show_inbox_frame),
             ("settings", t("nav.settings"), self.show_settings_frame),
         ]
-        self.sidebar_frame = ModernSidebar(self, nav_specs, SIDEBAR_WIDTH)
+        self.sidebar_frame = ModernSidebar(self._bg_layer, nav_specs, SIDEBAR_WIDTH)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
         self._nav_buttons = self.sidebar_frame.nav_buttons
         self._global_key_bindings: list[tuple] = []
         self._wire_event_bus()
 
         # Main Area Frames
-        self.main_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.main_frame = ctk.CTkFrame(self._bg_layer, corner_radius=0, fg_color="transparent")
         self.main_frame.grid(row=0, column=1, sticky="nsew")
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_columnconfigure(0, weight=1)
 
-        self.status_bar = StatusBar(self)
+        self.status_bar = StatusBar(self._bg_layer)
         self.status_bar.grid(row=1, column=0, columnspan=2, sticky="ew")
         self.status = AppStatusController(self, self.status_bar, self.sidebar_frame)
 
@@ -122,6 +123,7 @@ class PhotoOrganizerApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self._bind_global_keys()
         self.show_home_frame()
+        self.after(0, self._bg_layer._on_configure)
 
         if self._auto_watch or load_settings().start_on_launch:
             self.after(800, self._auto_start_watcher)

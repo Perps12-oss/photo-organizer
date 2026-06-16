@@ -94,28 +94,53 @@ def apply_preset_tokens(preset_id: str, custom_accent: str = "") -> str:
 
 
 class GradientBackground(ctk.CTkFrame):
-    """Full-window background layer using a theme gradient PNG."""
+    """Shell container with a full-area gradient PNG behind transparent children."""
 
-    def __init__(self, parent, preset_id: str = DEFAULT_PRESET_ID, **kwargs):
-        super().__init__(parent, fg_color="transparent", **kwargs)
-        self._preset_id = DEFAULT_PRESET_ID
+    def __init__(self, parent, preset_id: str | None = None, **kwargs):
+        super().__init__(parent, fg_color="transparent", corner_radius=0, **kwargs)
+        self._preset_id = normalize_preset_id(
+            preset_id or getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
+        )
         self._image: Optional[ctk.CTkImage] = None
-        self._bg_label = ctk.CTkLabel(self, text="")
+        self._last_size: tuple[int, int] = (0, 0)
+        self._bg_label = ctk.CTkLabel(self, text="", fg_color="transparent")
         self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.set_preset(preset_id)
+        self._bg_label.lower()
+        self.set_preset(self._preset_id)
+        self.bind("<Configure>", self._on_configure, add="+")
+        parent.bind("<Configure>", self._on_configure, add="+")
+        self.after_idle(self._on_configure)
+
+    def _on_configure(self, event=None) -> None:
+        if event is not None:
+            allowed = {self, self.winfo_toplevel()}
+            if event.widget not in allowed:
+                return
+        width = max(self.winfo_width(), 1)
+        height = max(self.winfo_height(), 1)
+        if width < 2 or height < 2:
+            return
+        if (width, height) == self._last_size:
+            return
+        self._last_size = (width, height)
+        self._apply_image(width, height)
 
     def set_preset(self, preset_id: str) -> None:
         from assets import clear_theme_background_cache
 
         clear_theme_background_cache()
         self._preset_id = normalize_preset_id(preset_id)
-        self._image = load_theme_background(self._preset_id)
+        self._last_size = (0, 0)
+        self._on_configure()
+
+    def _apply_image(self, width: int, height: int) -> None:
+        self._image = load_theme_background(self._preset_id, width, height)
         preset = THEME_PRESETS[self._preset_id]
         if self._image:
-            self._bg_label.configure(image=self._image, fg_color="transparent", text="")
+            self._bg_label.configure(image=self._image, text="")
             self.configure(fg_color="transparent")
         else:
-            self._bg_label.configure(image=None, text="", fg_color=preset.window_bg)
+            self._bg_label.configure(image=None, text="")
             self.configure(fg_color=preset.window_bg)
 
 

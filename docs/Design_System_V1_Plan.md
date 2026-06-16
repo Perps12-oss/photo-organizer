@@ -52,7 +52,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 |-------|------|--------|-------|
 | 0 | Branch & assets | **done** | Branch pushed; fonts + icons committed |
 | 1 | Token layer | **done** | `theme.py` V1 tokens + `init_fonts()` |
-| 1.5 | Multigradient themes | **done** | 11 presets + PNG backgrounds + live refresh |
+| 1.5 | Multigradient themes | **done** | 11 presets + 2560×1440 PNGs; `GradientBackground` shell container; live resize |
 | 2 | Component library | **partial** | Core widgets in `design_system.py`; `ViewPage` unused widely |
 | 3 | Shell integration | **done** | `ModernSidebar`, `StatusBar`, shell wiring |
 | 4 | Find Duplicates (reference) | **partial** | Pre + post-scan V1 cards; 4.4 tip bar done |
@@ -108,8 +108,8 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 1.1 | Full light palette + appearance mode mapping | planned | Settings dropdown stays; map to real light tokens |
 | 1.2 | Remove legacy `APP_*` aliases after full migration | planned | Grep-driven cleanup |
 | 1.3 | Accent / preset refreshes live shell widgets | done | `theme_manager.refresh_shell()` — sidebar, status, bg, toast |
-| 1.5 | Multigradient theme presets (10 + default) | done | `theme_presets.py`, `assets/themes/*.png`, Settings picker |
-| 1.6 | Theme background generator script | done | `scripts/generate_theme_backgrounds.py` |
+| 1.5 | Multigradient theme presets (10 + default) | done | `theme_presets.py`, `assets/themes/*.png` (2560×1440), Settings picker |
+| 1.6 | Theme background generator script | done | `scripts/generate_theme_backgrounds.py` — sidebar/content children of `GradientBackground` |
 | 1.4 | High-DPI font/icon scale tokens | deferred | 125% / 150% Windows scaling pass |
 
 ---

@@ -16,7 +16,11 @@ THEMES_DIR = os.path.join(ASSETS_DIR, "themes")
 
 _ICON_CACHE: dict[tuple[str, int, str], ctk.CTkImage] = {}
 _THEME_BG_CACHE: dict[str, ctk.CTkImage] = {}
+_THEME_PIL_CACHE: dict[str, Image.Image] = {}
 _FONTS_REGISTERED = False
+
+THEME_BG_NATIVE_WIDTH = 2560
+THEME_BG_NATIVE_HEIGHT = 1440
 
 
 def assets_root() -> str:
@@ -70,26 +74,44 @@ def _tint_image(path: str, color: str, size: int) -> Image.Image:
     return img
 
 
-def load_theme_background(preset_id: str, width: int = 1600, height: int = 900) -> Optional[ctk.CTkImage]:
-    """Load committed gradient PNG for a theme preset."""
-    key = f"{preset_id}:{width}x{height}"
-    if key in _THEME_BG_CACHE:
-        return _THEME_BG_CACHE[key]
+def _load_theme_pil(preset_id: str) -> Optional[Image.Image]:
+    if preset_id in _THEME_PIL_CACHE:
+        return _THEME_PIL_CACHE[preset_id]
 
     path = os.path.join(THEMES_DIR, f"{preset_id}.png")
     if not os.path.isfile(path):
         return None
 
     pil = Image.open(path).convert("RGB")
-    if pil.size != (width, height):
-        pil = pil.resize((width, height), Image.Resampling.LANCZOS)
-    img = ctk.CTkImage(light_image=pil, dark_image=pil, size=(width, height))
+    _THEME_PIL_CACHE[preset_id] = pil
+    return pil
+
+
+def load_theme_background(preset_id: str, width: int, height: int) -> Optional[ctk.CTkImage]:
+    """Load gradient PNG for a theme preset, scaled to the requested size."""
+    w = max(1, int(width))
+    h = max(1, int(height))
+    key = f"{preset_id}:{w}x{h}"
+    if key in _THEME_BG_CACHE:
+        return _THEME_BG_CACHE[key]
+
+    source = _load_theme_pil(preset_id)
+    if source is None:
+        return None
+
+    if source.size != (w, h):
+        scaled = source.resize((w, h), Image.Resampling.LANCZOS)
+    else:
+        scaled = source
+
+    img = ctk.CTkImage(light_image=scaled, dark_image=scaled, size=(w, h))
     _THEME_BG_CACHE[key] = img
     return img
 
 
 def clear_theme_background_cache() -> None:
     _THEME_BG_CACHE.clear()
+    _THEME_PIL_CACHE.clear()
 
 
 def load_icon(name: str, size: int = 20, color: Optional[str] = None) -> Optional[ctk.CTkImage]:

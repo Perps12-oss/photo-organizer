@@ -14,7 +14,7 @@ sys.path.insert(0, APP_DIR)
 from theme_presets import THEME_PRESETS  # noqa: E402
 
 OUT_DIR = os.path.join(ROOT, "assets", "themes")
-WIDTH, HEIGHT = 1600, 900
+WIDTH, HEIGHT = 2560, 1440
 
 
 def _blend(base: tuple[int, int, int], color: tuple[int, int, int], alpha: float) -> tuple[int, int, int]:
