@@ -289,7 +289,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 0–4 (+ partial 5–6) | pass | pass | pass | yes | yes | `13132eb` |
 | Plan doc + gate workflow | pass | pass | pass | yes | yes | `60f374f` |
 | 4.1–4.7 + 5.2–5.6 (partial) + 2.3/2.5/2.6 | pass | pass | pass | yes | yes | `7ca4656` |
-| 4.4 tip bar + 5.6 gallery depth | pass | pass | pass | yes | yes | `2704381` |
+| 4.4 tip bar + 5.6 gallery depth | pass | pass | pass | yes | yes | `23eaff1` |
 
 ### Smoke test checklist (Phase 6.1)
 
