@@ -3,12 +3,14 @@ Apply theme presets to the mutable theme token module and refresh the app shell.
 """
 from __future__ import annotations
 
+import tkinter as tk
 from typing import TYPE_CHECKING, Optional
 
 import customtkinter as ctk
+from PIL import ImageTk
 
 import theme
-from assets import load_theme_background
+from assets import resize_theme_background_pil
 from theme_presets import DEFAULT_PRESET_ID, THEME_PRESETS, normalize_preset_id
 
 if TYPE_CHECKING:
@@ -93,29 +95,45 @@ def apply_preset_tokens(preset_id: str, custom_accent: str = "") -> str:
     return pid
 
 
-class GradientBackground(ctk.CTkFrame):
-    """Shell container with a full-area gradient PNG behind transparent children."""
+class GradientBackground(tk.Frame):
+    """Full-window gradient via tk Canvas; CTk shell embedded with create_window.
+
+    CTk ``fg_color='transparent'`` only inherits a solid parent color — it cannot
+    reveal a sibling CTkLabel image. Embedding ``shell`` in the canvas makes
+    transparent descendants show the painted gradient.
+    """
 
     def __init__(self, parent, preset_id: str | None = None, **kwargs):
-        super().__init__(parent, fg_color="transparent", corner_radius=0, **kwargs)
+        preset = THEME_PRESETS[normalize_preset_id(
+            preset_id or getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
+        )]
+        super().__init__(parent, highlightthickness=0, bd=0, bg=preset.window_bg, **kwargs)
         self._preset_id = normalize_preset_id(
             preset_id or getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
         )
-        self._image: Optional[ctk.CTkImage] = None
+        self._photo: Optional[ImageTk.PhotoImage] = None
         self._last_size: tuple[int, int] = (0, 0)
-        self._bg_label = ctk.CTkLabel(self, text="", fg_color="transparent")
-        self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self._bg_label.lower()
-        self.set_preset(self._preset_id)
+
+        self._canvas = tk.Canvas(self, highlightthickness=0, bd=0, bg=preset.window_bg)
+        self._canvas.pack(fill="both", expand=True)
+
+        self.shell = ctk.CTkFrame(self._canvas, fg_color="transparent", corner_radius=0)
+        self._shell_window = self._canvas.create_window(0, 0, window=self.shell, anchor="nw")
+
+        self._canvas.bind("<Configure>", self._on_configure, add="+")
         self.bind("<Configure>", self._on_configure, add="+")
-        parent.bind("<Configure>", self._on_configure, add="+")
+        self.set_preset(self._preset_id)
         self.after_idle(self._on_configure)
 
+    def grid_columnconfigure(self, index, **kwargs):
+        self.shell.grid_columnconfigure(index, **kwargs)
+
+    def grid_rowconfigure(self, index, **kwargs):
+        self.shell.grid_rowconfigure(index, **kwargs)
+
     def _on_configure(self, event=None) -> None:
-        if event is not None:
-            allowed = {self, self.winfo_toplevel()}
-            if event.widget not in allowed:
-                return
+        if event is not None and event.widget not in (self, self._canvas):
+            return
         width = max(self.winfo_width(), 1)
         height = max(self.winfo_height(), 1)
         if width < 2 or height < 2:
@@ -123,6 +141,8 @@ class GradientBackground(ctk.CTkFrame):
         if (width, height) == self._last_size:
             return
         self._last_size = (width, height)
+        self._canvas.coords(self._shell_window, 0, 0)
+        self._canvas.itemconfig(self._shell_window, width=width, height=height)
         self._apply_image(width, height)
 
     def set_preset(self, preset_id: str) -> None:
@@ -131,27 +151,33 @@ class GradientBackground(ctk.CTkFrame):
         clear_theme_background_cache()
         self._preset_id = normalize_preset_id(preset_id)
         self._last_size = (0, 0)
+        preset = THEME_PRESETS[self._preset_id]
+        self.configure(bg=preset.window_bg)
+        self._canvas.configure(bg=preset.window_bg)
         self._on_configure()
 
     def _apply_image(self, width: int, height: int) -> None:
-        self._image = load_theme_background(self._preset_id, width, height)
         preset = THEME_PRESETS[self._preset_id]
-        if self._image:
-            self._bg_label.configure(image=self._image, text="")
-            self.configure(fg_color="transparent")
-        else:
-            self._bg_label.configure(image=None, text="")
-            self.configure(fg_color=preset.window_bg)
+        pil = resize_theme_background_pil(self._preset_id, width, height)
+        if pil is None:
+            self._photo = None
+            self._canvas.delete("gradient")
+            self._canvas.configure(bg=preset.window_bg)
+            return
+
+        self._photo = ImageTk.PhotoImage(pil)
+        self._canvas.delete("gradient")
+        self._canvas.create_image(0, 0, anchor="nw", image=self._photo, tags="gradient")
+        self._canvas.tag_lower("gradient")
+        self._canvas.tag_raise(self._shell_window)
 
 
 def refresh_shell(app: "PhotoOrganizerApp") -> None:
-    """Live refresh root, sidebar, status bar, and background after theme change."""
+    """Live refresh sidebar, status bar, and background after theme change."""
     pid = getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
 
     if hasattr(app, "_bg_layer") and app._bg_layer:
         app._bg_layer.set_preset(pid)
-
-    app.configure(fg_color=theme.WINDOW_BG)
 
     if hasattr(app, "sidebar_frame"):
         app.sidebar_frame.refresh_theme()

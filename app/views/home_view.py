@@ -40,7 +40,7 @@ class HomeView(ctk.CTkFrame):
 
         dup_col = ctk.CTkFrame(btn_row, fg_color="transparent")
         dup_col.pack(side="left", padx=16)
-        PrimaryButton(dup_col, text=t("nav.duplicates"), width=200, command=on_duplicates).pack()
+        PrimaryButton(dup_col, text=t("nav.duplicates"), width=200, icon="search", command=on_duplicates).pack()
         ctk.CTkLabel(dup_col, text=t("home.find_duplicates_hint"), font=CAPTION_FONT, text_color=TEXT_SECONDARY).pack(
             pady=(6, 0),
         )

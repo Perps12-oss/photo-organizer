@@ -109,7 +109,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 1.2 | Remove legacy `APP_*` aliases after full migration | planned | Grep-driven cleanup |
 | 1.3 | Accent / preset refreshes live shell widgets | done | `theme_manager.refresh_shell()` — sidebar, status, bg, toast |
 | 1.5 | Multigradient theme presets (10 + default) | done | `theme_presets.py`, `assets/themes/*.png` (2560×1440), Settings picker |
-| 1.6 | Theme background generator script | done | `scripts/generate_theme_backgrounds.py` — sidebar/content children of `GradientBackground` |
+| 1.6 | Theme background generator script | done | `scripts/generate_theme_backgrounds.py`; shell uses tk Canvas + `create_window` (CTk transparent cannot show sibling image) |
 | 1.4 | High-DPI font/icon scale tokens | deferred | 125% / 150% Windows scaling pass |
 
 ---

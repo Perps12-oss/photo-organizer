@@ -87,6 +87,18 @@ def _load_theme_pil(preset_id: str) -> Optional[Image.Image]:
     return pil
 
 
+def resize_theme_background_pil(preset_id: str, width: int, height: int) -> Optional[Image.Image]:
+    """Return gradient PNG scaled to the requested size (LANCZOS)."""
+    w = max(1, int(width))
+    h = max(1, int(height))
+    source = _load_theme_pil(preset_id)
+    if source is None:
+        return None
+    if source.size == (w, h):
+        return source
+    return source.resize((w, h), Image.Resampling.LANCZOS)
+
+
 def load_theme_background(preset_id: str, width: int, height: int) -> Optional[ctk.CTkImage]:
     """Load gradient PNG for a theme preset, scaled to the requested size."""
     w = max(1, int(width))
@@ -95,14 +107,9 @@ def load_theme_background(preset_id: str, width: int, height: int) -> Optional[c
     if key in _THEME_BG_CACHE:
         return _THEME_BG_CACHE[key]
 
-    source = _load_theme_pil(preset_id)
-    if source is None:
+    scaled = resize_theme_background_pil(preset_id, w, h)
+    if scaled is None:
         return None
-
-    if source.size != (w, h):
-        scaled = source.resize((w, h), Image.Resampling.LANCZOS)
-    else:
-        scaled = source
 
     img = ctk.CTkImage(light_image=scaled, dark_image=scaled, size=(w, h))
     _THEME_BG_CACHE[key] = img

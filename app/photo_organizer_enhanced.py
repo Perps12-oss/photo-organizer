@@ -49,9 +49,10 @@ class PhotoOrganizerApp(ctk.CTk):
 
         self._bg_layer = GradientBackground(self, preset_id=CURRENT_PRESET_ID)
         self._bg_layer.grid(row=0, column=0, sticky="nsew")
-        self._bg_layer.grid_columnconfigure(1, weight=1)
-        self._bg_layer.grid_rowconfigure(0, weight=1)
-        self._bg_layer.grid_rowconfigure(1, weight=0)
+        shell = self._bg_layer.shell
+        shell.grid_columnconfigure(1, weight=1)
+        shell.grid_rowconfigure(0, weight=1)
+        shell.grid_rowconfigure(1, weight=0)
         self._start_minimized = start_minimized
         self._auto_watch = auto_watch
         self._tray_hidden = False
@@ -87,19 +88,19 @@ class PhotoOrganizerApp(ctk.CTk):
             ("inbox", t("nav.inbox"), self.show_inbox_frame),
             ("settings", t("nav.settings"), self.show_settings_frame),
         ]
-        self.sidebar_frame = ModernSidebar(self._bg_layer, nav_specs, SIDEBAR_WIDTH)
+        self.sidebar_frame = ModernSidebar(shell, nav_specs, SIDEBAR_WIDTH)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
         self._nav_buttons = self.sidebar_frame.nav_buttons
         self._global_key_bindings: list[tuple] = []
         self._wire_event_bus()
 
         # Main Area Frames
-        self.main_frame = ctk.CTkFrame(self._bg_layer, corner_radius=0, fg_color="transparent")
+        self.main_frame = ctk.CTkFrame(shell, corner_radius=0, fg_color="transparent")
         self.main_frame.grid(row=0, column=1, sticky="nsew")
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_columnconfigure(0, weight=1)
 
-        self.status_bar = StatusBar(self._bg_layer)
+        self.status_bar = StatusBar(shell)
         self.status_bar.grid(row=1, column=0, columnspan=2, sticky="ew")
         self.status = AppStatusController(self, self.status_bar, self.sidebar_frame)
 
