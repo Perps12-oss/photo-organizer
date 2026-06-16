@@ -10,7 +10,7 @@ import customtkinter as ctk
 from PIL import ImageTk
 
 import theme
-from assets import resize_theme_background_pil
+from assets import clear_theme_background_cache, resize_theme_background_pil
 from theme_presets import DEFAULT_PRESET_ID, THEME_PRESETS, normalize_preset_id
 
 if TYPE_CHECKING:
@@ -96,12 +96,7 @@ def apply_preset_tokens(preset_id: str, custom_accent: str = "") -> str:
 
 
 class GradientBackground(tk.Frame):
-    """Full-window gradient via tk Canvas; CTk shell embedded with create_window.
-
-    CTk ``fg_color='transparent'`` only inherits a solid parent color — it cannot
-    reveal a sibling CTkLabel image. Embedding ``shell`` in the canvas makes
-    transparent descendants show the painted gradient.
-    """
+    """Full-window multigradient via tk.Label; CTk shell is a child of that label."""
 
     def __init__(self, parent, preset_id: str | None = None, **kwargs):
         preset = THEME_PRESETS[normalize_preset_id(
@@ -114,13 +109,12 @@ class GradientBackground(tk.Frame):
         self._photo: Optional[ImageTk.PhotoImage] = None
         self._last_size: tuple[int, int] = (0, 0)
 
-        self._canvas = tk.Canvas(self, highlightthickness=0, bd=0, bg=preset.window_bg)
-        self._canvas.pack(fill="both", expand=True)
+        self._bg_label = tk.Label(self, borderwidth=0, highlightthickness=0, bg=preset.window_bg)
+        self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-        self.shell = ctk.CTkFrame(self._canvas, fg_color="transparent", corner_radius=0)
-        self._shell_window = self._canvas.create_window(0, 0, window=self.shell, anchor="nw")
+        self.shell = ctk.CTkFrame(self._bg_label, fg_color="transparent", corner_radius=0)
+        self.shell.place(x=0, y=0, relwidth=1, relheight=1)
 
-        self._canvas.bind("<Configure>", self._on_configure, add="+")
         self.bind("<Configure>", self._on_configure, add="+")
         self.set_preset(self._preset_id)
         self.after_idle(self._on_configure)
@@ -132,7 +126,7 @@ class GradientBackground(tk.Frame):
         self.shell.grid_rowconfigure(index, **kwargs)
 
     def _on_configure(self, event=None) -> None:
-        if event is not None and event.widget not in (self, self._canvas):
+        if event is not None and event.widget is not self:
             return
         width = max(self.winfo_width(), 1)
         height = max(self.winfo_height(), 1)
@@ -141,19 +135,15 @@ class GradientBackground(tk.Frame):
         if (width, height) == self._last_size:
             return
         self._last_size = (width, height)
-        self._canvas.coords(self._shell_window, 0, 0)
-        self._canvas.itemconfig(self._shell_window, width=width, height=height)
         self._apply_image(width, height)
 
     def set_preset(self, preset_id: str) -> None:
-        from assets import clear_theme_background_cache
-
         clear_theme_background_cache()
         self._preset_id = normalize_preset_id(preset_id)
         self._last_size = (0, 0)
         preset = THEME_PRESETS[self._preset_id]
         self.configure(bg=preset.window_bg)
-        self._canvas.configure(bg=preset.window_bg)
+        self._bg_label.configure(bg=preset.window_bg)
         self._on_configure()
 
     def _apply_image(self, width: int, height: int) -> None:
@@ -161,15 +151,12 @@ class GradientBackground(tk.Frame):
         pil = resize_theme_background_pil(self._preset_id, width, height)
         if pil is None:
             self._photo = None
-            self._canvas.delete("gradient")
-            self._canvas.configure(bg=preset.window_bg)
+            self._bg_label.configure(image="", bg=preset.window_bg)
             return
 
         self._photo = ImageTk.PhotoImage(pil)
-        self._canvas.delete("gradient")
-        self._canvas.create_image(0, 0, anchor="nw", image=self._photo, tags="gradient")
-        self._canvas.tag_lower("gradient")
-        self._canvas.tag_raise(self._shell_window)
+        self._bg_label.configure(image=self._photo, bg=preset.window_bg)
+        self._bg_label.image = self._photo
 
 
 def refresh_shell(app: "PhotoOrganizerApp") -> None:
@@ -187,6 +174,14 @@ def refresh_shell(app: "PhotoOrganizerApp") -> None:
 
     if hasattr(app, "main_frame"):
         app.main_frame.configure(fg_color="transparent")
+
+    for attr in ("home_frame", "duplicate_frame", "gallery_frame", "sort_frame", "inbox_frame", "settings_frame"):
+        view = getattr(app, attr, None)
+        if view is not None and view.winfo_exists():
+            try:
+                view.configure(fg_color="transparent")
+            except Exception:
+                pass
 
     if hasattr(app, "toast"):
         app.toast.refresh_theme()

@@ -19,8 +19,8 @@ _THEME_BG_CACHE: dict[str, ctk.CTkImage] = {}
 _THEME_PIL_CACHE: dict[str, Image.Image] = {}
 _FONTS_REGISTERED = False
 
-THEME_BG_NATIVE_WIDTH = 2560
-THEME_BG_NATIVE_HEIGHT = 1440
+THEME_BG_NATIVE_WIDTH = 3840
+THEME_BG_NATIVE_HEIGHT = 2160
 
 
 def assets_root() -> str:
