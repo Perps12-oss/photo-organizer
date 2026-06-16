@@ -7,6 +7,8 @@ import time
 import cv2
 from PIL import Image
 
+from theme import ERROR, SUCCESS, WARNING
+
 try:
     import imagehash
     HAS_IMAGEHASH = True
@@ -92,11 +94,11 @@ def calculate_image_score(filepath, use_cv2: bool = True):
 def get_score_color(score):
     """Get color based on score (red=bad, green=good)."""
     if score > 70:
-        return "#198754"  # Green
+        return SUCCESS
     elif score > 40:
-        return "#ffc107"  # Yellow
+        return WARNING
     else:
-        return "#dc3545"  # Red
+        return ERROR
 
 def calculate_perceptual_hash(image_path):
     """Calculate perceptual hash for similar image detection."""

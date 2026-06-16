@@ -9,14 +9,13 @@ from typing import Callable, Optional
 import customtkinter as ctk
 from PIL import Image, ImageOps
 
-from theme import INPUT_BG
+from design_system import SecondaryButton
+from metadata_tools import ImageMetadata, read_metadata
+from theme import (
+    BORDER, CARD_RADIUS, FONT_MONO_SM, INPUT_BG, SURFACE_BG, TEXT_PRIMARY, TEXT_SECONDARY, WINDOW_BG,
+)
 from video_player import InlineVideoPlayer
 from video_thumbs import extract_video_thumbnail, is_video_file
-
-APP_BORDER = "#2d2d44"
-APP_TEXT_MUTED = "#8899aa"
-APP_ACCENT = "#00ffcc"
-FONT_MONO_SM = ("Consolas", 10)
 
 
 def load_oriented_image(path: str) -> Image.Image:
@@ -72,19 +71,19 @@ class EmbeddedImageViewer(ctk.CTkFrame):
         self.canvas_frame.grid_rowconfigure(0, weight=1)
         self.canvas_frame.grid_columnconfigure(0, weight=1)
 
-        self.image_label = ctk.CTkLabel(self.canvas_frame, text="No image", text_color=APP_TEXT_MUTED)
+        self.image_label = ctk.CTkLabel(self.canvas_frame, text="No image", text_color=TEXT_SECONDARY)
         self.image_label.grid(row=0, column=0, sticky="nsew")
 
         self.info_label = ctk.CTkLabel(
-            self, text="", font=FONT_MONO_SM, text_color=APP_TEXT_MUTED, anchor="w", justify="left",
+            self, text="", font=FONT_MONO_SM, text_color=TEXT_SECONDARY, anchor="w", justify="left",
         )
         self.info_label.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 4))
 
         btn_row = ctk.CTkFrame(self, fg_color="transparent")
         btn_row.grid(row=2, column=0, sticky="ew", padx=8, pady=(0, 8))
         if on_fullscreen:
-            ctk.CTkButton(btn_row, text="Fullscreen", width=100, command=on_fullscreen).pack(side="left")
-        self.play_video_btn = ctk.CTkButton(
+            SecondaryButton(btn_row, text="Fullscreen", width=100, command=on_fullscreen).pack(side="left")
+        self.play_video_btn = SecondaryButton(
             btn_row, text="▶ Play video", width=100, command=self._play_video_inline,
         )
         self.play_video_btn.pack(side="left", padx=(8, 0))
@@ -206,7 +205,7 @@ class LightboxViewer(ctk.CTkToplevel):
         self._key_bindings: list = []
 
         self.title("Media Viewer")
-        self.configure(fg_color="#000000")
+        self.configure(fg_color=WINDOW_BG)
         self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}+0+0")
         self.attributes("-fullscreen", True)
         self._fade_supported = True
@@ -218,12 +217,12 @@ class LightboxViewer(ctk.CTkToplevel):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.content = ctk.CTkFrame(self, fg_color="#000000")
+        self.content = ctk.CTkFrame(self, fg_color=WINDOW_BG)
         self.content.grid(row=0, column=0, sticky="nsew")
         self.content.grid_rowconfigure(0, weight=1)
         self.content.grid_columnconfigure(0, weight=1)
 
-        self.image_label = ctk.CTkLabel(self.content, text="", fg_color="#000000")
+        self.image_label = ctk.CTkLabel(self.content, text="", fg_color=WINDOW_BG)
         self.image_label.grid(row=0, column=0, sticky="nsew")
 
         self._bind_viewer_keys()
@@ -233,13 +232,15 @@ class LightboxViewer(ctk.CTkToplevel):
         if files:
             self._show_current()
         else:
-            self.image_label.configure(text="No images", text_color=APP_TEXT_MUTED)
+            self.image_label.configure(text="No images", text_color=TEXT_SECONDARY)
         self._fade_in()
 
-        self.hud = ctk.CTkFrame(self, fg_color="#111122", corner_radius=8, border_width=1, border_color=APP_BORDER)
+        self.hud = ctk.CTkFrame(
+            self, fg_color=SURFACE_BG, corner_radius=CARD_RADIUS, border_width=1, border_color=BORDER,
+        )
         self.hud.place(relx=0.5, rely=0.97, anchor="s")
         self.hud_label = ctk.CTkLabel(
-            self.hud, text="", font=FONT_MONO_SM, text_color="#ccddee",
+            self.hud, text="", font=FONT_MONO_SM, text_color=TEXT_PRIMARY,
             padx=16, pady=8,
         )
         self.hud_label.pack()
@@ -390,11 +391,11 @@ class LightboxViewer(ctk.CTkToplevel):
             if is_video_file(path):
                 self.image_label.configure(
                     image=None, text="Video preview unavailable (ffmpeg required)",
-                    text_color=APP_TEXT_MUTED,
+                    text_color=TEXT_SECONDARY,
                 )
             else:
                 self.image_label.configure(
-                    image=None, text="Cannot display image", text_color=APP_TEXT_MUTED,
+                    image=None, text="Cannot display image", text_color=TEXT_SECONDARY,
                 )
         self._update_hud(meta)
 
@@ -406,10 +407,11 @@ class SideBySideCompareDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Side-by-side compare")
         self.geometry("960x520")
+        self.configure(fg_color=WINDOW_BG)
         self.transient(parent)
 
         row = ctk.CTkFrame(self, fg_color="transparent")
-        row.pack(fill="both", expand=True, padx=12, pady=12)
+        row.pack(fill="both", expand=True, padx=12, pady=(12, 0))
         row.grid_columnconfigure(0, weight=1)
         row.grid_columnconfigure(1, weight=1)
         row.grid_rowconfigure(0, weight=1)
@@ -419,7 +421,7 @@ class SideBySideCompareDialog(ctk.CTkToplevel):
             panel = ctk.CTkFrame(row, fg_color=INPUT_BG, corner_radius=8)
             panel.grid(row=0, column=col, sticky="nsew", padx=6)
             ctk.CTkLabel(
-                panel, text=os.path.basename(path), font=FONT_MONO_SM, text_color=APP_TEXT_MUTED,
+                panel, text=os.path.basename(path), font=FONT_MONO_SM, text_color=TEXT_SECONDARY,
             ).pack(pady=(8, 4))
             img_label = ctk.CTkLabel(panel, text="")
             img_label.pack(expand=True, padx=8, pady=8)
@@ -431,4 +433,8 @@ class SideBySideCompareDialog(ctk.CTkToplevel):
                 self._refs.append(ctk_img)
                 img_label.configure(image=ctk_img, text="")
             except OSError:
-                img_label.configure(text="Preview unavailable", text_color=APP_TEXT_MUTED)
+                img_label.configure(text="Preview unavailable", text_color=TEXT_SECONDARY)
+
+        footer = ctk.CTkFrame(self, fg_color="transparent")
+        footer.pack(fill="x", padx=12, pady=12)
+        SecondaryButton(footer, text="Close", width=90, command=self.destroy).pack(side="right")

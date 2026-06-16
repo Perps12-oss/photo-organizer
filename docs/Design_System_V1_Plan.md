@@ -55,8 +55,8 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 2 | Component library | **partial** | Core widgets in `design_system.py`; `ViewPage` unused widely |
 | 3 | Shell integration | **done** | `ModernSidebar`, `StatusBar`, shell wiring |
 | 4 | Find Duplicates (reference) | **partial** | Pre + post-scan V1 cards; 4.4 tip bar done |
-| 5 | Roll out other views | **partial** | Sort footer + inbox status + gallery dialogs (5.7 partial) |
-| 6 | Cleanup & verification | **partial** | Hex clean on touched views; formal QA checklist open |
+| 5 | Roll out other views | **partial** | All main views + viewer/lightbox token pass (5.7 done) |
+| 6 | Cleanup & verification | **partial** | Hex clean on views + media_*; automated gate pass; manual QA open |
 
 ---
 
@@ -232,7 +232,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | Settings | `app/settings_view.py` | partial | `PageHeader`, `ModernSlider`, styled menus/checkboxes | Minor raw controls if any remain |
 | File Organizer | `app/views/sort_view.py` | partial | `PageHeader`, `ElevatedCard`, DS footer buttons | — |
 | Inbox Watcher | `app/views/inbox_view.py` | partial | `PageHeader`, `ElevatedCard`, DS footer, status card V1 inner | — |
-| Media Gallery | `app/media_gallery.py` | partial | Toolbar/filters/side/bulk/sidecar + dialog DS buttons (5.7 partial) | Lightbox/viewer (5.7 remainder) |
+| Media Gallery | `app/media_gallery.py` | partial | Toolbar/filters/side/bulk/sidecar + dialog DS buttons | — |
 
 ### Per-view checklist (tick as completed)
 
@@ -263,13 +263,14 @@ Do **not** mark a phase complete or push until all of the following pass:
 
 - [x] Phase 5 — baseline pass
 - [x] Phase 5.6 — toolbar/header/filters/side panel/bulk/sidecar DS depth
-- [~] Phase 5.7 — gallery dialogs (`SidecarMappingDialog`, `SidecarMergeDialog`, `AutodetectWizardDialog`, `GpsMapDialog`, `StarRatingWidget`) DS buttons + tokens
+- [x] Phase 5.7 — gallery dialogs (`SidecarMappingDialog`, `SidecarMergeDialog`, `AutodetectWizardDialog`, `GpsMapDialog`, `StarRatingWidget`) DS buttons + tokens
+- [x] Phase 5.7b — `media_viewer.py` / `video_player.py` lightbox + compare + embedded viewer token pass + DS buttons
 
 ### Variations (Phase 5.x) — cross-cutting
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| 5.7 | Dialogs / lightbox / sidecar UI (`media_viewer.py`, dialogs) | partial | Gallery dialogs + star widget token pass; viewer/lightbox remain |
+| 5.7 | Dialogs / lightbox / sidecar UI (`media_viewer.py`, dialogs) | done | Gallery dialogs + viewer/lightbox/compare + embedded panel |
 | 5.8 | `photo_organizer_pro.py` / `hybrid.py` — out of scope unless requested | deferred | Enhanced app is canonical shell |
 | 5.9 | Empty states → shared `EmptyState` or `ResultsCard` pattern | planned | Gallery + sort preview |
 
@@ -280,10 +281,10 @@ Do **not** mark a phase complete or push until all of the following pass:
 **Status:** partial
 
 - [x] Remove `NeonScanHero` and exports
-- [~] Grep hardcoded hex — **clean on main views + gallery dialogs**; duplicate thumb placeholders + `media_viewer` remain
-- [~] Phase gate automation documented (see top of this doc)
-- [ ] Manual smoke test — formal sign-off | **6.1**
-- [ ] Remove dead neon constants from any remaining imports | **6.2**
+- [x] Grep hardcoded hex — **clean on main views + gallery dialogs + media_viewer/video_player + duplicate thumbs**
+- [x] Phase gate automation documented (see top of this doc)
+- [~] Manual smoke test — formal sign-off | **6.1** (automated gate pass; click-through unchecked)
+- [~] Remove dead neon constants from any remaining imports | **6.2** (helpers score colors → theme tokens; pro/hybrid out of scope)
 
 ### Phase gate log
 
@@ -294,8 +295,11 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 4.1–4.7 + 5.2–5.6 (partial) + 2.3/2.5/2.6 | pass | pass | pass | yes | yes | `7ca4656` |
 | 4.4 tip bar + 5.6 gallery depth | pass | pass | pass | yes | yes | `23eaff1` |
 | Sort footer + inbox status + 5.7 dialogs (partial) | pass | pass | pass | yes | yes | `2d889b0` |
+| 5.7 viewer/lightbox + 6 hex cleanup + gate | pass | pass | pass | yes | yes | *(this commit)* |
 
 ### Smoke test checklist (Phase 6.1)
+
+**Automated gate:** pass (syntax + app startup) — see Phase gate log for commit.
 
 - [ ] Navigate all 6 views; sidebar active indicator correct
 - [ ] Duplicate scan: pre-scan → progress card → results → post-scan groups
@@ -309,7 +313,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| 6.2 | Delete unused neon token names if any linger | planned | |
+| 6.2 | Delete unused neon token names if any linger | partial | `helpers.get_score_color` → SUCCESS/WARNING/ERROR; pro/hybrid deferred (5.8) |
 | 6.3 | Lint rule or script: flag `#` colors outside `theme.py` / `design_system.py` | deferred | |
 | 6.4 | Screenshot baseline / visual regression | deferred | Manual only for now |
 | 6.5 | Merge `ui/design-system-v1` → `master` via PR | planned | After 6.1 sign-off |
@@ -330,7 +334,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 |----|--------|--------|
 | PR 1 | 0–4 core + partial 5–6 | **shipped** (`13132eb`) |
 | PR 2 | 4.1–4.3 post-scan + results polish | **shipped** |
-| PR 3 | 5.3–5.6 remaining view depth | **partial** (5.6 + sort/inbox/dialog polish done) |
+| PR 3 | 5.3–5.6 remaining view depth | **shipped** (5.6 + sort/inbox/dialog + viewer polish) |
 | PR 4 | 1.1 light mode + 6.1 QA sign-off | planned |
 
 ---
@@ -343,6 +347,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 2026-06-14 | ULTRAWORK: Phase 4 post-scan, 5.2–5.6 partial, DangerButton, toast V1 |
 | 2026-06-16 | Phase 4.4 pre-scan tip bar; Phase 5.6 gallery depth (side panel, filters, bulk) |
 | 2026-06-16 | Sort footer DS buttons; inbox status card polish; gallery dialog token pass (5.7 partial) |
+| 2026-06-16 | Phase 5.7b viewer/lightbox/compare tokens; duplicate thumb hex → theme; helpers score colors; gate pass |
 
 ---
 

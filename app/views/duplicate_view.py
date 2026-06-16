@@ -32,7 +32,7 @@ from theme import (
     APP_BORDER, APP_BTN_DISABLED_FG, APP_BTN_DISABLED_TEXT, APP_BTN_GHOST, APP_BTN_OUTLINE,
     APP_DANGER, APP_DANGER_HOVER, APP_INPUT, APP_PRIMARY, APP_PRIMARY_HOVER, APP_PRIMARY_TEXT,
     APP_SECONDARY, APP_SUCCESS, APP_SUCCESS_HOVER, APP_SURFACE, APP_TEXT, APP_TEXT_MUTED,
-    ACCENT, ACCENT_HOVER, BODY_FONT, CAPTION_FONT, CARD_RADIUS, CONTENT_MARGIN, CONTROL_GAP,
+    ACCENT, ACCENT_HOVER, BODY_FONT, BTN_ACTIVE, BTN_HOVER, CAPTION_FONT, CARD_RADIUS, CONTENT_MARGIN, CONTROL_GAP,
     FONT_BODY, FONT_HEADING, FONT_LABEL, FONT_MONO, FONT_MONO_SM, FONT_SMALL, FONT_TITLE,
     SECTION_FONT, SECTION_GAP, TEXT_SECONDARY, WARNING,
 )
@@ -1437,7 +1437,7 @@ class DuplicateView(ctk.CTkFrame):
         self._update_recommendation_panel(paths)
 
     def create_image_card(self, parent, path, row, col):
-        frame = ctk.CTkFrame(parent, border_width=2, border_color="gray", corner_radius=10)
+        frame = ctk.CTkFrame(parent, border_width=2, border_color=APP_BORDER, corner_radius=10)
         frame.grid(row=row, column=col, padx=15, pady=15, sticky="nsew")
         
         # Get File Stats
@@ -1459,8 +1459,8 @@ class DuplicateView(ctk.CTkFrame):
         # Image Thumbnail (placeholder; loaded on background thread)
         thumb_size = self.thumb_size
         img_container = ctk.CTkButton(
-            frame, text="Loading…", fg_color="#2b2b2b",
-            hover_color="gray30", border_width=2, border_color="gray",
+            frame, text="Loading…", fg_color=APP_INPUT,
+            hover_color=BTN_HOVER, border_width=2, border_color=APP_BORDER,
             width=thumb_size[0], height=thumb_size[1],
             command=lambda p=path: self.manual_toggle(p),
         )
@@ -1479,14 +1479,14 @@ class DuplicateView(ctk.CTkFrame):
         def _load_thumb_worker():
             try:
                 if path.lower().endswith((".mov", ".mp4")):
-                    img = Image.new("RGB", thumb_size, color="#444444")
+                    img = Image.new("RGB", thumb_size, color=BTN_ACTIVE)
                     d = ImageDraw.Draw(img)
                     d.text((10, 10), "VIDEO FILE", fill="white")
                 else:
                     with Image.open(path) as pil_src:
                         pil_img = pil_src.copy()
                     pil_img.thumbnail(thumb_size, Image.Resampling.LANCZOS)
-                    img = Image.new("RGB", thumb_size, color="#2b2b2b")
+                    img = Image.new("RGB", thumb_size, color=APP_INPUT)
                     img.paste(
                         pil_img,
                         ((thumb_size[0] - pil_img.width) // 2, (thumb_size[1] - pil_img.height) // 2),

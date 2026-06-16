@@ -12,7 +12,7 @@ from PIL import Image
 
 from video_thumbs import extract_video_thumbnail, is_video_file
 
-from theme import INPUT_BG
+from theme import FONT_MONO_SM, INPUT_BG, TEXT_SECONDARY, WINDOW_BG
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,6 @@ try:
 except ImportError:
     HAS_CV2 = False
     cv2 = None  # type: ignore
-
-APP_TEXT_MUTED = "#8899aa"
 
 
 def cv2_available() -> bool:
@@ -47,7 +45,7 @@ class InlineVideoPlayer(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.display = ctk.CTkLabel(self, text="", fg_color="#000000")
+        self.display = ctk.CTkLabel(self, text="", fg_color=WINDOW_BG)
         self.display.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
 
         controls = ctk.CTkFrame(self, fg_color="transparent")
@@ -63,7 +61,7 @@ class InlineVideoPlayer(ctk.CTkFrame):
         )
         self.speed_menu.set("1x")
         self.speed_menu.grid(row=0, column=2, padx=(8, 0))
-        self.time_label = ctk.CTkLabel(controls, text="0:00 / 0:00", font=("Consolas", 10), text_color=APP_TEXT_MUTED)
+        self.time_label = ctk.CTkLabel(controls, text="0:00 / 0:00", font=FONT_MONO_SM, text_color=TEXT_SECONDARY)
         self.time_label.grid(row=0, column=3, padx=(8, 0))
 
         self.bind("<Destroy>", lambda _e: self.stop())
