@@ -299,7 +299,7 @@ Do **not** mark a phase complete or push until all of the following pass:
 | 4.4 tip bar + 5.6 gallery depth | pass | pass | pass | yes | yes | `23eaff1` |
 | Sort footer + inbox status + 5.7 dialogs (partial) | pass | pass | pass | yes | yes | `2d889b0` |
 | 5.7 viewer/lightbox + 6 hex cleanup + gate | pass | pass | pass | yes | yes | `09b366a` |
-| Multigradient themes + P1 polish | pass | pass | pass | yes | yes | TBD |
+| Multigradient themes + P1 polish | pass | pass | pass | yes | yes | `7d8ee47` |
 
 ### Smoke test checklist (Phase 6.1)
 
