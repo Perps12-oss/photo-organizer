@@ -70,9 +70,9 @@ from design_system import (
     StyledCheckBox, StyledOptionMenu,
 )
 from theme import (
-    APP_ACCENT, APP_ACCENT_HOVER, APP_BORDER, APP_CARD, APP_SECONDARY, APP_SECONDARY_HOVER,
-    APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, CONTENT_MARGIN, FONT_MONO_SM,
-    GALLERY_SORT_OPTIONS, INPUT_BG, SECTION_GAP,
+    APP_ACCENT, APP_ACCENT_HOVER, APP_BORDER, APP_CARD, APP_PRIMARY_TEXT, APP_SECONDARY, APP_SECONDARY_HOVER,
+    APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, BTN_ACTIVE, CONTENT_MARGIN, ERROR, FONT_MONO_SM,
+    GALLERY_SORT_OPTIONS, INPUT_BG, INPUT_RADIUS, SECTION_GAP, SIDEBAR_TILE_ACTIVE, WINDOW_BG,
 )
 from ui_components import EmptyState, GALLERY_SHORTCUTS
 from i18n import t
@@ -95,14 +95,13 @@ class StarRatingWidget(ctk.CTkFrame):
         for i in range(1, 6):
             btn = ctk.CTkButton(
                 row, text="*", width=32, height=28,
-                fg_color="#2a2a3e", hover_color="#353550",
+                fg_color=INPUT_BG, hover_color=SIDEBAR_TILE_ACTIVE,
                 command=lambda n=i: self.set_rating(n, notify=True),
             )
             btn.pack(side="left", padx=2)
             self._buttons.append(btn)
-        ctk.CTkButton(
-            row, text="Clear", width=50, height=28,
-            fg_color="transparent", border_width=1, border_color=APP_BORDER,
+        GhostButton(
+            row, text="Clear", width=50,
             command=lambda: self.set_rating(0, notify=True),
         ).pack(side="left", padx=(8, 0))
 
@@ -111,13 +110,13 @@ class StarRatingWidget(ctk.CTkFrame):
         for i, btn in enumerate(self._buttons, start=1):
             if i <= self._rating:
                 btn.configure(
-                    fg_color=APP_ACCENT, text_color="#0a0a12",
+                    fg_color=APP_ACCENT, text_color=APP_PRIMARY_TEXT,
                     hover_color=APP_ACCENT_HOVER,
                 )
             else:
                 btn.configure(
-                    fg_color="#2a2a3e", text_color=APP_TEXT_MUTED,
-                    hover_color="#454560",
+                    fg_color=INPUT_BG, text_color=APP_TEXT_MUTED,
+                    hover_color=BTN_ACTIVE,
                 )
         if notify and self.on_change:
             self.on_change(self._rating)
@@ -137,6 +136,7 @@ class SidecarMappingDialog(ctk.CTkToplevel):
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
+        self.configure(fg_color=WINDOW_BG)
 
         settings = load_app_settings()
         display = mapping_to_display(settings.sidecar_field_mapping)
@@ -161,12 +161,9 @@ class SidecarMappingDialog(ctk.CTkToplevel):
 
         btn_row = ctk.CTkFrame(self, fg_color="transparent")
         btn_row.pack(fill="x", padx=16, pady=16)
-        ctk.CTkButton(btn_row, text="Reset defaults", width=120, command=self._reset_defaults).pack(side="left")
-        ctk.CTkButton(btn_row, text="Cancel", width=90, command=self.destroy).pack(side="right", padx=(8, 0))
-        ctk.CTkButton(
-            btn_row, text="Save", width=90, fg_color=APP_ACCENT, text_color="#0a0a12",
-            hover_color=APP_ACCENT_HOVER, command=self._save,
-        ).pack(side="right")
+        SecondaryButton(btn_row, text="Reset defaults", width=120, command=self._reset_defaults).pack(side="left")
+        SecondaryButton(btn_row, text="Cancel", width=90, command=self.destroy).pack(side="right", padx=(8, 0))
+        PrimaryButton(btn_row, text="Save", width=90, command=self._save).pack(side="right")
 
     def _reset_defaults(self):
         display = mapping_to_display(DEFAULT_SIDECAR_MAPPING)
@@ -210,6 +207,7 @@ class SidecarMergeDialog(ctk.CTkToplevel):
         self.minsize(600, 400)
         self.transient(parent)
         self.grab_set()
+        self.configure(fg_color=WINDOW_BG)
 
         ctk.CTkLabel(
             self,
@@ -220,13 +218,11 @@ class SidecarMergeDialog(ctk.CTkToplevel):
 
         toolbar = ctk.CTkFrame(self, fg_color="transparent")
         toolbar.pack(fill="x", padx=16, pady=(0, 8))
-        ctk.CTkButton(toolbar, text="Select all", width=90, command=self._select_all).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(toolbar, text="Clear all", width=90, command=self._clear_all).pack(side="left")
+        SecondaryButton(toolbar, text="Select all", width=90, command=self._select_all).pack(side="left", padx=(0, 6))
+        SecondaryButton(toolbar, text="Clear all", width=90, command=self._clear_all).pack(side="left")
         if on_mapping:
-            ctk.CTkButton(
-                toolbar, text="Field mapping", width=110,
-                fg_color="transparent", border_width=1, border_color=APP_BORDER,
-                command=on_mapping,
+            SecondaryButton(
+                toolbar, text="Field mapping", width=110, command=on_mapping,
             ).pack(side="right")
 
         self.list_frame = ctk.CTkScrollableFrame(self, fg_color=INPUT_BG, height=320)
@@ -241,11 +237,9 @@ class SidecarMergeDialog(ctk.CTkToplevel):
         ctk.CTkCheckBox(footer, text="Delete sidecar after successful merge", variable=self.delete_var).pack(
             side="left",
         )
-        ctk.CTkButton(footer, text="Cancel", width=90, command=self.destroy).pack(side="right", padx=(8, 0))
-        ctk.CTkButton(
-            footer, text="Merge checked", width=130,
-            fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
-            command=self._merge_checked,
+        SecondaryButton(footer, text="Cancel", width=90, command=self.destroy).pack(side="right", padx=(8, 0))
+        PrimaryButton(
+            footer, text="Merge checked", width=130, command=self._merge_checked,
         ).pack(side="right", padx=(8, 0))
 
     def _add_pair_row(self, image_path: str, sidecar_path: str):
@@ -874,7 +868,7 @@ class MediaGalleryView(ctk.CTkFrame):
 
     def _set_save_status(self, text: str, *, error: bool = False, saved: bool = False):
         if error:
-            color = "#ff6b6b"
+            color = ERROR
         elif saved:
             color = APP_ACCENT
         else:
@@ -1119,7 +1113,7 @@ class MediaGalleryView(ctk.CTkFrame):
     def _create_thumb_card(self, path: str, row: int, col: int):
         meta = self._get_cached_meta(path)
 
-        card = ctk.CTkFrame(self.gallery_grid, fg_color="#141424", corner_radius=8, border_width=2,
+        card = ctk.CTkFrame(self.gallery_grid, fg_color=INPUT_BG, corner_radius=INPUT_RADIUS, border_width=2,
                             border_color=APP_BORDER, cursor="hand2")
         card.grid(row=row, column=col, padx=6, pady=6, sticky="nsew")
         self.gallery_grid.grid_columnconfigure(col, weight=1)
@@ -1778,6 +1772,7 @@ class AutodetectWizardDialog(ctk.CTkToplevel):
         self.geometry("640x480")
         self.transient(parent)
         self.grab_set()
+        self.configure(fg_color=WINDOW_BG)
         self._on_done = on_done
         self._plan = batch_autodetect_plan(paths)
 
@@ -1804,11 +1799,9 @@ class AutodetectWizardDialog(ctk.CTkToplevel):
 
         row = ctk.CTkFrame(self, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(0, 14))
-        ctk.CTkButton(row, text="Cancel", width=100, command=self.destroy).pack(side="right")
-        ctk.CTkButton(
-            row, text=f"Apply to {len(self._plan)} file(s)", width=160,
-            fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
-            command=self._apply_all,
+        SecondaryButton(row, text="Cancel", width=100, command=self.destroy).pack(side="right")
+        PrimaryButton(
+            row, text=f"Apply to {len(self._plan)} file(s)", width=160, command=self._apply_all,
         ).pack(side="right", padx=(0, 8))
 
     def _apply_all(self):
@@ -1843,6 +1836,7 @@ class GpsMapDialog(ctk.CTkToplevel):
         self.geometry("620x460")
         self.transient(parent)
         self.grab_set()
+        self.configure(fg_color=WINDOW_BG)
 
         geotagged: list[tuple[str, float, float]] = []
         for path in paths:
@@ -1866,11 +1860,10 @@ class GpsMapDialog(ctk.CTkToplevel):
 
         row = ctk.CTkFrame(self, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(0, 14))
-        ctk.CTkButton(row, text="Close", width=100, command=self.destroy).pack(side="right")
+        SecondaryButton(row, text="Close", width=100, command=self.destroy).pack(side="right")
         if geotagged:
             first = geotagged[0]
-            ctk.CTkButton(
+            PrimaryButton(
                 row, text="Open first in browser", width=150,
-                fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
                 command=lambda: open_in_browser(first[1], first[2]),
             ).pack(side="right", padx=(0, 8))

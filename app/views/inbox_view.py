@@ -10,7 +10,11 @@ from inbox_watcher import (
     set_windows_autostart, is_windows_autostart_enabled,
 )
 from design_system import ElevatedCard, ModernSlider, PageHeader, PrimaryButton, SecondaryButton, StyledCheckBox, StyledOptionMenu
-from theme import APP_ACCENT, APP_BORDER, APP_CARD, APP_SUCCESS, APP_SUCCESS_HOVER, APP_TEXT, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_FONT, SECTION_GAP, SIDEBAR_TILE_ACTIVE, WARNING
+from theme import (
+    ACCENT, APP_ACCENT, APP_BORDER, APP_CARD, APP_DANGER, APP_DANGER_HOVER, APP_SUCCESS, APP_SUCCESS_HOVER,
+    APP_TEXT, APP_TEXT_MUTED, BODY_FONT, BORDER, BTN_ACTIVE, CONTENT_MARGIN, ERROR, FONT_MONO_SM, INPUT_BG,
+    INPUT_RADIUS, SECTION_FONT, SECTION_GAP, SIDEBAR_TILE_ACTIVE, SUCCESS, TEXT_PRIMARY, WARNING,
+)
 from ui_components import INBOX_SHORTCUTS
 from views.helpers import truncate_middle
 from i18n import t
@@ -42,7 +46,6 @@ class InboxWatcherView(ctk.CTkFrame):
         self.run_at_login_var = ctk.BooleanVar(value=is_windows_autostart_enabled())
         self.minimize_tray_var = ctk.BooleanVar(value=settings.minimize_to_tray)
         self._pulse_job = None
-        self._status_card_base = INPUT_BG
         self._inbox_key_bindings: list = []
 
         self.grid_columnconfigure(0, weight=1)
@@ -96,7 +99,7 @@ class InboxWatcherView(ctk.CTkFrame):
         StyledCheckBox(opts, text="Minimize to tray when closing window", variable=self.minimize_tray_var).pack(anchor="w", pady=2)
         if not TrayController.available():
             ctk.CTkLabel(opts, text="Install pystray for system tray: pip install pystray",
-                         text_color="#aa8844", font=ctk.CTkFont(size=11)).pack(anchor="w", pady=(4, 0))
+                         text_color=WARNING, font=ctk.CTkFont(size=11)).pack(anchor="w", pady=(4, 0))
 
         right_card = ElevatedCard(body)
         right_card.grid(row=0, column=1, padx=(8, 0), sticky="nsew")
@@ -105,17 +108,17 @@ class InboxWatcherView(ctk.CTkFrame):
         right.grid_columnconfigure(0, weight=1)
 
         self.status_card = ctk.CTkFrame(
-            right, fg_color=self._status_card_base, corner_radius=10,
-            border_width=2, border_color=APP_BORDER,
+            right, fg_color=INPUT_BG, corner_radius=INPUT_RADIUS,
+            border_width=1, border_color=BORDER,
         )
-        self.status_card.grid(row=0, column=0, sticky="ew", padx=14, pady=(14, 10))
+        self.status_card.grid(row=0, column=0, sticky="ew", pady=(0, 10))
 
         card_top = ctk.CTkFrame(self.status_card, fg_color="transparent")
-        card_top.pack(fill="x", padx=14, pady=(12, 6))
-        ctk.CTkLabel(card_top, text="Watcher status", font=ctk.CTkFont(size=12, weight="bold"),
+        card_top.pack(fill="x", padx=16, pady=(14, 6))
+        ctk.CTkLabel(card_top, text="Watcher status", font=SECTION_FONT,
                      text_color=APP_TEXT_MUTED).pack(side="left")
         self.status_badge = ctk.CTkLabel(
-            card_top, text="● STOPPED", text_color="#ff6b6b",
+            card_top, text="● STOPPED", text_color=ERROR,
             font=ctk.CTkFont(size=13, weight="bold"),
         )
         self.status_badge.pack(side="right")
@@ -124,16 +127,16 @@ class InboxWatcherView(ctk.CTkFrame):
             self.status_card, text="Last file: —",
             font=FONT_MONO_SM, text_color=APP_TEXT, anchor="w", justify="left",
         )
-        self.last_file_label.pack(fill="x", padx=14, pady=(0, 4))
+        self.last_file_label.pack(fill="x", padx=16, pady=(0, 4))
 
         self.last_dest_label = ctk.CTkLabel(
             self.status_card, text="Routed to: —",
             font=FONT_MONO_SM, text_color=APP_TEXT_MUTED, anchor="w", justify="left",
         )
-        self.last_dest_label.pack(fill="x", padx=14, pady=(0, 8))
+        self.last_dest_label.pack(fill="x", padx=16, pady=(0, 8))
 
         counts = ctk.CTkFrame(self.status_card, fg_color="transparent")
-        counts.pack(fill="x", padx=14, pady=(0, 12))
+        counts.pack(fill="x", padx=16, pady=(0, 14))
         self.session_count_label = ctk.CTkLabel(
             counts, text="Session: 0", font=FONT_MONO_SM, text_color=APP_ACCENT,
         )
@@ -311,8 +314,8 @@ class InboxWatcherView(ctk.CTkFrame):
         if self._pulse_job:
             self.after_cancel(self._pulse_job)
         self._pulse_step = 0
-        self._pulse_colors = [self._status_card_base, "#3d4420", "#4a5028", "#3d4420", self._status_card_base]
-        self._pulse_borders = [APP_BORDER, APP_ACCENT, "#ffd966", APP_ACCENT, APP_BORDER]
+        self._pulse_colors = [INPUT_BG, SIDEBAR_TILE_ACTIVE, BTN_ACTIVE, SIDEBAR_TILE_ACTIVE, INPUT_BG]
+        self._pulse_borders = [BORDER, ACCENT, WARNING, ACCENT, BORDER]
         self._run_pulse_step()
 
     def _run_pulse_step(self):
@@ -341,9 +344,15 @@ class InboxWatcherView(ctk.CTkFrame):
                 text=f"Routed to: {truncate_middle(self.watcher.last_processed_dest, 64)}"
             )
         if self.watcher.running:
-            self.status_badge.configure(text="● RUNNING", text_color="#00ff88")
-            self.watch_btn.configure(text="Stop Watcher", fg_color="#dc3545", hover_color="#a82835")
+            self.status_badge.configure(text="● RUNNING", text_color=SUCCESS)
+            self.watch_btn.configure(
+                text="Stop Watcher", fg_color=APP_DANGER, hover_color=APP_DANGER_HOVER,
+                text_color=TEXT_PRIMARY,
+            )
         else:
-            self.status_badge.configure(text="● STOPPED", text_color="#ff6b6b")
-            self.watch_btn.configure(text="Start Watcher", fg_color="#198754", hover_color="#13653f")
+            self.status_badge.configure(text="● STOPPED", text_color=ERROR)
+            self.watch_btn.configure(
+                text="Start Watcher", fg_color=APP_SUCCESS, hover_color=APP_SUCCESS_HOVER,
+                text_color=TEXT_PRIMARY,
+            )
 

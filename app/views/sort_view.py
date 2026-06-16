@@ -14,7 +14,11 @@ from inbox_watcher import load_settings
 from app_settings import load_app_settings, save_app_settings
 from media_viewer import load_oriented_image, pil_to_ctk_image
 from design_system import ElevatedCard, LabeledEntry, PageHeader, PrimaryButton, SecondaryButton, StyledOptionMenu
-from theme import APP_BORDER, APP_CARD, APP_TEXT, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, SECTION_FONT, SECTION_GAP, SIDEBAR_TILE_ACTIVE, TEXT_SECONDARY
+from theme import (
+    APP_ACCENT, APP_ACCENT_HOVER, APP_BORDER, APP_CARD, APP_PRIMARY_TEXT, APP_SUCCESS, APP_SUCCESS_HOVER,
+    APP_TEXT, APP_TEXT_MUTED, BODY_FONT, CONTENT_MARGIN, FONT_MONO_SM, INPUT_BG, INPUT_RADIUS,
+    SECTION_FONT, SECTION_GAP, SIDEBAR_TILE_ACTIVE, TEXT_SECONDARY,
+)
 from ui_components import ORGANIZER_SHORTCUTS
 from views.helpers import truncate_middle
 from i18n import t
@@ -174,7 +178,7 @@ class SortView(ctk.CTkFrame):
         )
         self.browse_root_label.pack(side="right", fill="x", expand=True, padx=(12, 0))
 
-        folders_panel = ctk.CTkFrame(browse_frame, fg_color="INPUT_BG", corner_radius=8)
+        folders_panel = ctk.CTkFrame(browse_frame, fg_color=INPUT_BG, corner_radius=INPUT_RADIUS)
         folders_panel.grid(row=1, column=0, padx=(14, 6), pady=(0, 10), sticky="nsew")
         folders_panel.grid_rowconfigure(1, weight=1)
         folders_panel.grid_columnconfigure(0, weight=1)
@@ -187,7 +191,7 @@ class SortView(ctk.CTkFrame):
         )
         self.browse_folder_list.grid(row=1, column=0, padx=6, pady=(0, 8), sticky="nsew")
 
-        preview_panel = ctk.CTkFrame(browse_frame, fg_color="INPUT_BG", corner_radius=8)
+        preview_panel = ctk.CTkFrame(browse_frame, fg_color=INPUT_BG, corner_radius=INPUT_RADIUS)
         preview_panel.grid(row=1, column=1, padx=(6, 14), pady=(0, 10), sticky="nsew")
         preview_panel.grid_rowconfigure(1, weight=1)
         preview_panel.grid_columnconfigure(0, weight=1)
@@ -212,9 +216,8 @@ class SortView(ctk.CTkFrame):
             browse_actions, text="Open in Gallery", width=140, command=self._browse_open_gallery,
             fg_color="transparent", border_width=1, border_color=APP_BORDER, hover_color=SIDEBAR_TILE_ACTIVE,
         ).pack(side="left", padx=(0, 8))
-        ctk.CTkButton(
+        PrimaryButton(
             browse_actions, text="Organize from here", width=160, command=self._browse_organize_from_here,
-            fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER,
         ).pack(side="left", padx=(0, 8))
         ctk.CTkButton(
             browse_actions, text="Set as destination", width=150, command=self._browse_set_destination,
@@ -238,12 +241,13 @@ class SortView(ctk.CTkFrame):
 
         btn_row = ctk.CTkFrame(footer, fg_color="transparent")
         btn_row.grid(row=1, column=0)
-        ctk.CTkButton(btn_row, text="Preview Organization", width=180, height=40,
-                      command=self.preview_organization).pack(side="left", padx=(0, 10))
-        self.start_btn = ctk.CTkButton(
-            btn_row, text="Start Organizing", width=180, height=40,
-            fg_color="#198754", hover_color="#13653f", command=self.start_organization,
+        SecondaryButton(
+            btn_row, text="Preview Organization", width=180, command=self.preview_organization,
+        ).pack(side="left", padx=(0, 10))
+        self.start_btn = PrimaryButton(
+            btn_row, text="Start Organizing", width=180, command=self.start_organization,
         )
+        self.start_btn.configure(fg_color=APP_SUCCESS, hover_color=APP_SUCCESS_HOVER)
         self.start_btn.pack(side="left")
 
     def _add_option(self, parent, label, variable, values):
@@ -475,7 +479,7 @@ class SortView(ctk.CTkFrame):
     def _highlight_browse_folder(self, folder: str):
         for path, btn in self._browse_folder_buttons.items():
             if path == folder:
-                btn.configure(fg_color=APP_ACCENT, text_color="#0a0a12", hover_color=APP_ACCENT_HOVER)
+                btn.configure(fg_color=APP_ACCENT, text_color=APP_PRIMARY_TEXT, hover_color=APP_ACCENT_HOVER)
             else:
                 btn.configure(fg_color="transparent", text_color=APP_TEXT, hover_color=SIDEBAR_TILE_ACTIVE)
 
@@ -570,7 +574,7 @@ class SortView(ctk.CTkFrame):
             if col == 0:
                 row_frame = ctk.CTkFrame(self.browse_thumb_grid, fg_color="transparent")
                 row_frame.pack(fill="x", pady=2)
-            cell = ctk.CTkFrame(row_frame, fg_color="#1a1a28", corner_radius=6, width=BROWSE_THUMB_SIZE + 8,
+            cell = ctk.CTkFrame(row_frame, fg_color=INPUT_BG, corner_radius=8, width=BROWSE_THUMB_SIZE + 8,
                                 height=BROWSE_THUMB_SIZE + 8)
             cell.pack(side="left", padx=4, pady=4)
             cell.pack_propagate(False)
