@@ -3,14 +3,12 @@ Apply theme presets to the mutable theme token module and refresh the app shell.
 """
 from __future__ import annotations
 
-import tkinter as tk
 from typing import TYPE_CHECKING, Optional
 
 import customtkinter as ctk
-from PIL import ImageTk
 
 import theme
-from assets import clear_theme_background_cache, resize_theme_background_pil
+from assets import clear_theme_background_cache, load_theme_background
 from theme_presets import DEFAULT_PRESET_ID, THEME_PRESETS, normalize_preset_id
 
 if TYPE_CHECKING:
@@ -95,41 +93,32 @@ def apply_preset_tokens(preset_id: str, custom_accent: str = "") -> str:
     return pid
 
 
-class GradientBackground(tk.Frame):
-    """Full-window multigradient via tk.Label; CTk shell is a child of that label."""
+class RootBackground:
+    """Full-window composited gradient via CTkLabel + CTkImage on the root window."""
 
-    def __init__(self, parent, preset_id: str | None = None, **kwargs):
-        preset = THEME_PRESETS[normalize_preset_id(
-            preset_id or getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
-        )]
-        super().__init__(parent, highlightthickness=0, bd=0, bg=preset.window_bg, **kwargs)
+    def __init__(self, root: ctk.CTk, preset_id: str | None = None):
+        self.root = root
         self._preset_id = normalize_preset_id(
             preset_id or getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
         )
-        self._photo: Optional[ImageTk.PhotoImage] = None
         self._last_size: tuple[int, int] = (0, 0)
+        self._ctk_image: Optional[ctk.CTkImage] = None
 
-        self._bg_label = tk.Label(self, borderwidth=0, highlightthickness=0, bg=preset.window_bg)
-        self._bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.bg_label = ctk.CTkLabel(root, text="", fg_color="transparent")
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-        self.shell = ctk.CTkFrame(self._bg_label, fg_color="transparent", corner_radius=0)
-        self.shell.place(x=0, y=0, relwidth=1, relheight=1)
-
-        self.bind("<Configure>", self._on_configure, add="+")
+        root.bind("<Configure>", self._on_configure, add="+")
         self.set_preset(self._preset_id)
-        self.after_idle(self._on_configure)
+        root.after_idle(self._on_configure)
 
-    def grid_columnconfigure(self, index, **kwargs):
-        self.shell.grid_columnconfigure(index, **kwargs)
-
-    def grid_rowconfigure(self, index, **kwargs):
-        self.shell.grid_rowconfigure(index, **kwargs)
+    def send_to_back(self) -> None:
+        self.bg_label.lower()
 
     def _on_configure(self, event=None) -> None:
-        if event is not None and event.widget is not self:
+        if event is not None and event.widget is not self.root:
             return
-        width = max(self.winfo_width(), 1)
-        height = max(self.winfo_height(), 1)
+        width = max(self.root.winfo_width(), 1)
+        height = max(self.root.winfo_height(), 1)
         if width < 2 or height < 2:
             return
         if (width, height) == self._last_size:
@@ -141,30 +130,29 @@ class GradientBackground(tk.Frame):
         clear_theme_background_cache()
         self._preset_id = normalize_preset_id(preset_id)
         self._last_size = (0, 0)
-        preset = THEME_PRESETS[self._preset_id]
-        self.configure(bg=preset.window_bg)
-        self._bg_label.configure(bg=preset.window_bg)
         self._on_configure()
 
     def _apply_image(self, width: int, height: int) -> None:
         preset = THEME_PRESETS[self._preset_id]
-        pil = resize_theme_background_pil(self._preset_id, width, height)
-        if pil is None:
-            self._photo = None
-            self._bg_label.configure(image="", bg=preset.window_bg)
+        img = load_theme_background(self._preset_id, width, height)
+        if img is None:
+            self._ctk_image = None
+            self.bg_label.configure(image=None)
+            self.root.configure(fg_color=preset.window_bg)
             return
 
-        self._photo = ImageTk.PhotoImage(pil)
-        self._bg_label.configure(image=self._photo, bg=preset.window_bg)
-        self._bg_label.image = self._photo
+        self._ctk_image = img
+        self.bg_label.configure(image=img)
+        self.root.configure(fg_color=preset.window_bg)
 
 
 def refresh_shell(app: "PhotoOrganizerApp") -> None:
     """Live refresh sidebar, status bar, and background after theme change."""
     pid = getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
 
-    if hasattr(app, "_bg_layer") and app._bg_layer:
-        app._bg_layer.set_preset(pid)
+    if hasattr(app, "_bg") and app._bg:
+        app._bg.set_preset(pid)
+        app._bg.send_to_back()
 
     if hasattr(app, "sidebar_frame"):
         app.sidebar_frame.refresh_theme()

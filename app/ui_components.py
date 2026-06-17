@@ -241,7 +241,15 @@ class ModernSidebar(ctk.CTkFrame):
     """App sidebar with branding, navigation, and footer status."""
 
     def __init__(self, parent, nav_specs: list[tuple[str, str, Callable]], width: int, **kwargs):
-        super().__init__(parent, width=width, corner_radius=0, fg_color="transparent", **kwargs)
+        super().__init__(
+            parent,
+            width=width,
+            corner_radius=0,
+            fg_color=APP_SIDEBAR,
+            border_width=1,
+            border_color=APP_BORDER,
+            **kwargs,
+        )
         self.grid_propagate(False)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(20, weight=1)
@@ -284,7 +292,7 @@ class ModernSidebar(ctk.CTkFrame):
         self.footer_dot.configure(text_color=ACCENT if scanning else SUCCESS)
 
     def refresh_theme(self):
-        self.configure(fg_color="transparent")
+        self.configure(fg_color=APP_SIDEBAR, border_color=APP_BORDER)
         self.footer_label.configure(text_color=TEXT_SECONDARY)
         for btn in self.nav_buttons.values():
             btn.refresh_theme()
@@ -298,7 +306,15 @@ class StatusBar(ctk.CTkFrame):
     """Global footer status strip — left status / center job / right version."""
 
     def __init__(self, parent, version: str = "1.2.0", **kwargs):
-        super().__init__(parent, height=28, corner_radius=0, fg_color="transparent", **kwargs)
+        super().__init__(
+            parent,
+            height=28,
+            corner_radius=0,
+            fg_color=STATUS_BAR_BG,
+            border_width=1,
+            border_color=APP_BORDER,
+            **kwargs,
+        )
         self.grid_propagate(False)
         self._scanning = False
 
@@ -329,7 +345,7 @@ class StatusBar(ctk.CTkFrame):
         self.center_label.configure(text=text or "")
 
     def refresh_theme(self):
-        self.configure(fg_color="transparent")
+        self.configure(fg_color=STATUS_BAR_BG, border_color=APP_BORDER)
         self.label.configure(text_color=TEXT_SECONDARY)
         self.center_label.configure(text_color=TEXT_SECONDARY)
         self.version_label.configure(text_color=TEXT_SECONDARY)

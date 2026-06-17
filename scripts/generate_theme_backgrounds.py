@@ -19,9 +19,10 @@ from theme_presets import THEME_PRESETS  # noqa: E402
 OUT_DIR = os.path.join(ROOT, "assets", "themes")
 WIDTH, HEIGHT = 3840, 2160
 
-# Saturated wash layer blended at ~20% through pre-baked #0b1220 shell overlay.
+# Target ~20–26% visibility; auto-boost low-contrast presets until std_dev passes.
 OVERLAY_RGB = (11, 18, 32)
-COLOR_VISIBLE = 0.20
+COLOR_VISIBLE_TARGET = 0.26
+COLOR_VISIBLE_MAX = 0.58
 STD_DEV_MIN = 20.0
 
 
@@ -85,6 +86,14 @@ def render_gradient(preset_id: str) -> Image.Image:
         (0.88, 0.22, 0.38, alt, 0.32),
         (0.52, 0.92, 0.48, accent, 0.26),
     ])
+    if preset_id == "slate_mono":
+        washes = [
+            (0.25, 0.35, 0.55, (0, 180, 220), 0.28),
+            (0.75, 0.65, 0.45, (120, 80, 200), 0.24),
+            (0.55, 0.15, 0.35, (80, 120, 180), 0.18),
+            (0.12, 0.18, 0.42, (40, 160, 210), 0.40),
+            (0.88, 0.22, 0.38, (100, 140, 220), 0.34),
+        ]
 
     for cx_r, cy_r, rad_r, rgb, opacity in washes:
         cx = int(WIDTH * cx_r)
@@ -104,7 +113,13 @@ def render_gradient(preset_id: str) -> Image.Image:
     colorful = Image.alpha_composite(colorful.convert("RGBA"), vignette).convert("RGB")
 
     navy = Image.new("RGB", (WIDTH, HEIGHT), OVERLAY_RGB)
-    return Image.blend(navy, colorful, COLOR_VISIBLE)
+    visible = 0.34 if preset_id == "slate_mono" else COLOR_VISIBLE_TARGET
+    max_vis = 0.62 if preset_id == "slate_mono" else COLOR_VISIBLE_MAX
+    composed = Image.blend(navy, colorful, visible)
+    while _std_dev(composed) < STD_DEV_MIN and visible < max_vis:
+        visible += 0.04
+        composed = Image.blend(navy, colorful, visible)
+    return composed
 
 
 def _save_png(img: Image.Image, path: str) -> None:
