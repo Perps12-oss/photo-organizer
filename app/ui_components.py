@@ -245,8 +245,9 @@ class ModernSidebar(ctk.CTkFrame):
             parent,
             width=width,
             corner_radius=0,
-            fg_color="transparent",
-            border_width=0,
+            fg_color=APP_SIDEBAR,
+            border_width=1,
+            border_color=APP_BORDER,
             **kwargs,
         )
         self.grid_propagate(False)
@@ -291,7 +292,7 @@ class ModernSidebar(ctk.CTkFrame):
         self.footer_dot.configure(text_color=ACCENT if scanning else SUCCESS)
 
     def refresh_theme(self):
-        self.configure(fg_color="transparent")
+        self.configure(fg_color=APP_SIDEBAR, border_color=APP_BORDER)
         self.footer_label.configure(text_color=TEXT_SECONDARY)
         for btn in self.nav_buttons.values():
             btn.refresh_theme()
@@ -309,8 +310,9 @@ class StatusBar(ctk.CTkFrame):
             parent,
             height=28,
             corner_radius=0,
-            fg_color="transparent",
-            border_width=0,
+            fg_color=STATUS_BAR_BG,
+            border_width=1,
+            border_color=APP_BORDER,
             **kwargs,
         )
         self.grid_propagate(False)
@@ -343,7 +345,7 @@ class StatusBar(ctk.CTkFrame):
         self.center_label.configure(text=text or "")
 
     def refresh_theme(self):
-        self.configure(fg_color="transparent")
+        self.configure(fg_color=STATUS_BAR_BG, border_color=APP_BORDER)
         self.label.configure(text_color=TEXT_SECONDARY)
         self.center_label.configure(text_color=TEXT_SECONDARY)
         self.version_label.configure(text_color=TEXT_SECONDARY)

@@ -641,13 +641,13 @@ class DuplicateView(ctk.CTkFrame):
             elif i == self.focused_image_index:
                 border, width = APP_SECONDARY, 3
             else:
-                border, width = "gray", 2
+                border, width = APP_BORDER, 2
             card.configure(border_color=border, border_width=width)
             if card.meta_data.get("img_container"):
                 ic = card.meta_data["img_container"]
                 ic.configure(
                     border_color=APP_DANGER if card.meta_data["path"] in self.files_to_delete else
-                    (APP_SECONDARY if i == self.focused_image_index else "gray"),
+                    (APP_SECONDARY if i == self.focused_image_index else APP_BORDER),
                 )
 
     def _open_folder_in_explorer(self, folder: str) -> bool:
@@ -1525,7 +1525,7 @@ class DuplicateView(ctk.CTkFrame):
         dir_path = os.path.dirname(path)
         if len(dir_path) > 40:
             dir_path = "..." + dir_path[-37:]
-        ctk.CTkLabel(info_frame, text=f"📁 {dir_path}", font=("Arial", 9), text_color="gray").pack(anchor="w", pady=(2, 5))
+        ctk.CTkLabel(info_frame, text=f"📁 {dir_path}", font=FONT_MONO_SM, text_color=TEXT_SECONDARY).pack(anchor="w", pady=(2, 5))
 
         # Checkbox (Marked for deletion)
         del_var = ctk.BooleanVar(value=False)
@@ -1579,9 +1579,9 @@ class DuplicateView(ctk.CTkFrame):
                         widget.meta_data["img_container"].configure(border_color=APP_DANGER)
                 else:
                     self.files_to_delete.discard(path)
-                    widget.configure(border_color="gray")
+                    widget.configure(border_color=APP_BORDER)
                     if widget.meta_data["img_container"]:
-                        widget.meta_data["img_container"].configure(border_color="gray")
+                        widget.meta_data["img_container"].configure(border_color=APP_BORDER)
                 break
 
         self._update_image_focus()

@@ -18,10 +18,10 @@ from services.file_operation_service import FileOperationService
 from services.metadata_provider import MetadataProvider
 from i18n import set_locale, t
 from theme import (
-    init_fonts, SIDEBAR_WIDTH, CURRENT_PRESET_ID,
+    init_fonts, SIDEBAR_WIDTH,
     WINDOW_BG, WINDOW_DEFAULT, WINDOW_MIN_H, WINDOW_MIN_W,
 )
-from theme_manager import RootBackground, apply_from_settings, apply_preset_tokens, refresh_shell
+from theme_manager import apply_from_settings, apply_preset_tokens, refresh_shell
 from ui_components import (
     AppStatusController,
     ModernSidebar,
@@ -44,9 +44,12 @@ class PhotoOrganizerApp(ctk.CTk):
         init_fonts(self)
         apply_from_settings()
         self.configure(fg_color=WINDOW_BG)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-        self._bg = RootBackground(self, preset_id=CURRENT_PRESET_ID)
-        shell = self._bg.shell
+        self._shell = ctk.CTkFrame(self, fg_color=WINDOW_BG, corner_radius=0)
+        self._shell.grid(row=0, column=0, sticky="nsew")
+        shell = self._shell
         shell.grid_columnconfigure(1, weight=1)
         shell.grid_rowconfigure(0, weight=1)
         shell.grid_rowconfigure(1, weight=0)
@@ -92,7 +95,7 @@ class PhotoOrganizerApp(ctk.CTk):
         self._wire_event_bus()
 
         # Main Area Frames
-        self.main_frame = ctk.CTkFrame(shell, corner_radius=0, fg_color="transparent")
+        self.main_frame = ctk.CTkFrame(shell, corner_radius=0, fg_color=WINDOW_BG)
         self.main_frame.grid(row=0, column=1, sticky="nsew")
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_columnconfigure(0, weight=1)
@@ -121,7 +124,6 @@ class PhotoOrganizerApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self._bind_global_keys()
         self.show_home_frame()
-        self.after(0, self._bg._on_configure)
 
         if self._auto_watch or load_settings().start_on_launch:
             self.after(800, self._auto_start_watcher)

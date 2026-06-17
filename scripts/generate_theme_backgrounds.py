@@ -14,15 +14,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_DIR = os.path.join(ROOT, "app")
 sys.path.insert(0, APP_DIR)
 
-from theme_presets import THEME_PRESETS  # noqa: E402
+from theme_presets import GRADIENT_OVERLAY_RGB, THEME_PRESETS  # noqa: E402
 
 OUT_DIR = os.path.join(ROOT, "assets", "themes")
 WIDTH, HEIGHT = 3840, 2160
 
 # Target ~20–26% visibility; auto-boost low-contrast presets until std_dev passes.
-OVERLAY_RGB = (11, 18, 32)
-COLOR_VISIBLE_TARGET = 0.26
-COLOR_VISIBLE_MAX = 0.58
+OVERLAY_RGB = GRADIENT_OVERLAY_RGB
+COLOR_VISIBLE_TARGET = 0.44
+COLOR_VISIBLE_MAX = 0.72
 STD_DEV_MIN = 20.0
 
 

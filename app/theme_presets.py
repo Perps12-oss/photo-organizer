@@ -35,11 +35,17 @@ class ThemePreset:
     gradient_base: tuple[int, int, int]
     gradient_washes: tuple[GradientWash, ...] = field(default_factory=tuple)
     sidebar_bg: Optional[str] = None
+    success_hover: str = "#16a34a"
+    danger_hover: str = "#dc2626"
+    btn_active: str = ""
 
     @property
     def sidebar_surface(self) -> str:
         return self.sidebar_bg or self.surface_bg
 
+
+# RGB tuple for compositing gradient PNGs (scripts/generate_theme_backgrounds.py)
+GRADIENT_OVERLAY_RGB = (11, 18, 32)
 
 THEME_PRESETS: dict[str, ThemePreset] = {}
 

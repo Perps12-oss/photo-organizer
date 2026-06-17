@@ -3,28 +3,15 @@ Apply theme presets to the mutable theme token module and refresh the app shell.
 """
 from __future__ import annotations
 
-import tkinter as tk
-from tkinter import Label
 from typing import TYPE_CHECKING, Optional
 
 import customtkinter as ctk
-from PIL import ImageTk
 
 import theme
-from assets import clear_theme_background_cache, resize_theme_background_pil
 from theme_presets import DEFAULT_PRESET_ID, THEME_PRESETS, normalize_preset_id
 
 if TYPE_CHECKING:
     from photo_organizer_enhanced import PhotoOrganizerApp
-
-_BTN_DERIVED = {
-    "BTN_HOVER": lambda p: p.sidebar_tile_active,
-    "BTN_ACTIVE": lambda p: _lighten_hex(p.border, 0.08),
-    "BTN_INACTIVE_HOVER": lambda p: p.sidebar_tile_active,
-    "APP_SUCCESS_HOVER": lambda _: "#16a34a",
-    "APP_DANGER_HOVER": lambda _: "#dc2626",
-    "APP_BTN_DISABLED_FG": lambda p: _lighten_hex(p.input_bg, 0.12),
-}
 
 
 def _hex_rgb(hex_color: str) -> tuple[int, int, int]:
@@ -84,87 +71,30 @@ def apply_preset_tokens(preset_id: str, custom_accent: str = "") -> str:
         "APP_PRIMARY_HOVER": accent_hover,
         "APP_SECONDARY": preset.accent_alt,
         "APP_SECONDARY_HOVER": accent_hover,
+        "APP_SUCCESS_HOVER": preset.success_hover,
+        "APP_DANGER_HOVER": preset.danger_hover,
         "BTN_NORMAL": preset.input_bg,
+        "BTN_HOVER": preset.sidebar_tile_active,
+        "BTN_ACTIVE": preset.btn_active or _lighten_hex(preset.border, 0.08),
+        "BTN_INACTIVE_HOVER": preset.sidebar_tile_active,
+        "APP_BTN_DISABLED_FG": _lighten_hex(preset.input_bg, 0.12),
     }
     for name, value in mapping.items():
         setattr(theme, name, value)
-
-    for name, fn in _BTN_DERIVED.items():
-        setattr(theme, name, fn(preset))
 
     theme.CURRENT_PRESET_ID = pid
     return pid
 
 
-class RootBackground:
-    """
-    Full-window gradient background.
-
-    CTk cannot show a sibling CTkLabel image through transparent frames — transparent
-    frames inherit the root solid color only. Fix: paint the gradient on a tk.Label
-    and embed the CTk shell as a *child* of that label so transparent regions reveal
-    the image underneath.
-    """
-
-    def __init__(self, root: ctk.CTk, preset_id: str | None = None):
-        self.root = root
-        self._preset_id = normalize_preset_id(
-            preset_id or getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
-        )
-        self._last_size: tuple[int, int] = (0, 0)
-        self._photo: Optional[ImageTk.PhotoImage] = None
-
-        self._label = Label(root, borderwidth=0, highlightthickness=0)
-        self._label.place(x=0, y=0, relwidth=1, relheight=1)
-
-        self.shell = ctk.CTkFrame(self._label, fg_color="transparent", corner_radius=0)
-        self.shell.place(x=0, y=0, relwidth=1, relheight=1)
-
-        root.bind("<Configure>", self._on_configure, add="+")
-        self.set_preset(self._preset_id)
-        root.after_idle(self._on_configure)
-
-    def send_to_back(self) -> None:
-        """No-op — shell is a child of the gradient label, not a root sibling."""
-
-    def _on_configure(self, event=None) -> None:
-        if event is not None and event.widget is not self.root:
-            return
-        width = max(self.root.winfo_width(), 1)
-        height = max(self.root.winfo_height(), 1)
-        if width < 2 or height < 2:
-            return
-        if (width, height) == self._last_size:
-            return
-        self._last_size = (width, height)
-        self._apply_image(width, height)
-
-    def set_preset(self, preset_id: str) -> None:
-        clear_theme_background_cache()
-        self._preset_id = normalize_preset_id(preset_id)
-        self._last_size = (0, 0)
-        self._on_configure()
-
-    def _apply_image(self, width: int, height: int) -> None:
-        preset = THEME_PRESETS[self._preset_id]
-        scaled = resize_theme_background_pil(self._preset_id, width, height)
-        if scaled is None:
-            self._photo = None
-            self._label.configure(image="")
-            self.root.configure(fg_color=preset.window_bg)
-            return
-
-        self._photo = ImageTk.PhotoImage(scaled)
-        self._label.configure(image=self._photo)
-        self.root.configure(fg_color=preset.window_bg)
-
-
 def refresh_shell(app: "PhotoOrganizerApp") -> None:
-    """Live refresh sidebar, status bar, and background after theme change."""
-    pid = getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
+    """Live refresh root, shell, sidebar, status bar, and views after theme change."""
+    bg = theme.WINDOW_BG
 
-    if hasattr(app, "_bg") and app._bg:
-        app._bg.set_preset(pid)
+    app.configure(fg_color=bg)
+    if hasattr(app, "_shell"):
+        app._shell.configure(fg_color=bg)
+    if hasattr(app, "main_frame"):
+        app.main_frame.configure(fg_color=bg)
 
     if hasattr(app, "sidebar_frame"):
         app.sidebar_frame.refresh_theme()
@@ -172,14 +102,11 @@ def refresh_shell(app: "PhotoOrganizerApp") -> None:
     if hasattr(app, "status_bar"):
         app.status_bar.refresh_theme()
 
-    if hasattr(app, "main_frame"):
-        app.main_frame.configure(fg_color="transparent")
-
     for attr in ("home_frame", "duplicate_frame", "gallery_frame", "sort_frame", "inbox_frame", "settings_frame"):
         view = getattr(app, attr, None)
         if view is not None and view.winfo_exists():
             try:
-                view.configure(fg_color="transparent")
+                view.configure(fg_color=bg)
             except Exception:
                 pass
 
