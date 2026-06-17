@@ -19,7 +19,7 @@ from services.metadata_provider import MetadataProvider
 from i18n import set_locale, t
 from theme import (
     init_fonts, SIDEBAR_WIDTH, CURRENT_PRESET_ID,
-    WINDOW_DEFAULT, WINDOW_MIN_H, WINDOW_MIN_W,
+    WINDOW_BG, WINDOW_DEFAULT, WINDOW_MIN_H, WINDOW_MIN_W,
 )
 from theme_manager import RootBackground, apply_from_settings, apply_preset_tokens, refresh_shell
 from ui_components import (
@@ -43,14 +43,10 @@ class PhotoOrganizerApp(ctk.CTk):
         self.minsize(WINDOW_MIN_W, WINDOW_MIN_H)
         init_fonts(self)
         apply_from_settings()
-        self.configure(fg_color="transparent")
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
+        self.configure(fg_color=WINDOW_BG)
 
         self._bg = RootBackground(self, preset_id=CURRENT_PRESET_ID)
-
-        shell = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
-        shell.grid(row=0, column=0, sticky="nsew")
+        shell = self._bg.shell
         shell.grid_columnconfigure(1, weight=1)
         shell.grid_rowconfigure(0, weight=1)
         shell.grid_rowconfigure(1, weight=0)
@@ -125,7 +121,6 @@ class PhotoOrganizerApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self._bind_global_keys()
         self.show_home_frame()
-        self._bg.send_to_back()
         self.after(0, self._bg._on_configure)
 
         if self._auto_watch or load_settings().start_on_launch:

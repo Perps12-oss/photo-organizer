@@ -3,12 +3,15 @@ Apply theme presets to the mutable theme token module and refresh the app shell.
 """
 from __future__ import annotations
 
+import tkinter as tk
+from tkinter import Label
 from typing import TYPE_CHECKING, Optional
 
 import customtkinter as ctk
+from PIL import ImageTk
 
 import theme
-from assets import clear_theme_background_cache, load_theme_background
+from assets import clear_theme_background_cache, resize_theme_background_pil
 from theme_presets import DEFAULT_PRESET_ID, THEME_PRESETS, normalize_preset_id
 
 if TYPE_CHECKING:
@@ -94,7 +97,14 @@ def apply_preset_tokens(preset_id: str, custom_accent: str = "") -> str:
 
 
 class RootBackground:
-    """Full-window composited gradient via CTkLabel + CTkImage on the root window."""
+    """
+    Full-window gradient background.
+
+    CTk cannot show a sibling CTkLabel image through transparent frames — transparent
+    frames inherit the root solid color only. Fix: paint the gradient on a tk.Label
+    and embed the CTk shell as a *child* of that label so transparent regions reveal
+    the image underneath.
+    """
 
     def __init__(self, root: ctk.CTk, preset_id: str | None = None):
         self.root = root
@@ -102,17 +112,20 @@ class RootBackground:
             preset_id or getattr(theme, "CURRENT_PRESET_ID", DEFAULT_PRESET_ID)
         )
         self._last_size: tuple[int, int] = (0, 0)
-        self._ctk_image: Optional[ctk.CTkImage] = None
+        self._photo: Optional[ImageTk.PhotoImage] = None
 
-        self.bg_label = ctk.CTkLabel(root, text="", fg_color="transparent")
-        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self._label = Label(root, borderwidth=0, highlightthickness=0)
+        self._label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        self.shell = ctk.CTkFrame(self._label, fg_color="transparent", corner_radius=0)
+        self.shell.place(x=0, y=0, relwidth=1, relheight=1)
 
         root.bind("<Configure>", self._on_configure, add="+")
         self.set_preset(self._preset_id)
         root.after_idle(self._on_configure)
 
     def send_to_back(self) -> None:
-        self.bg_label.lower()
+        """No-op — shell is a child of the gradient label, not a root sibling."""
 
     def _on_configure(self, event=None) -> None:
         if event is not None and event.widget is not self.root:
@@ -134,15 +147,15 @@ class RootBackground:
 
     def _apply_image(self, width: int, height: int) -> None:
         preset = THEME_PRESETS[self._preset_id]
-        img = load_theme_background(self._preset_id, width, height)
-        if img is None:
-            self._ctk_image = None
-            self.bg_label.configure(image=None)
+        scaled = resize_theme_background_pil(self._preset_id, width, height)
+        if scaled is None:
+            self._photo = None
+            self._label.configure(image="")
             self.root.configure(fg_color=preset.window_bg)
             return
 
-        self._ctk_image = img
-        self.bg_label.configure(image=img)
+        self._photo = ImageTk.PhotoImage(scaled)
+        self._label.configure(image=self._photo)
         self.root.configure(fg_color=preset.window_bg)
 
 
@@ -152,7 +165,6 @@ def refresh_shell(app: "PhotoOrganizerApp") -> None:
 
     if hasattr(app, "_bg") and app._bg:
         app._bg.set_preset(pid)
-        app._bg.send_to_back()
 
     if hasattr(app, "sidebar_frame"):
         app.sidebar_frame.refresh_theme()

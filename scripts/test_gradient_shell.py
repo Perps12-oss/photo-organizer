@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal repro: composited multigradient behind CTkLabel + glass shell."""
+"""Minimal repro: gradient label embeds transparent CTk shell."""
 from __future__ import annotations
 
 import os
@@ -15,7 +15,7 @@ from PIL import Image  # noqa: E402
 
 from assets import THEMES_DIR  # noqa: E402
 from design_system import ElevatedCard  # noqa: E402
-from theme import APP_BORDER, APP_SIDEBAR, STATUS_BAR_BG  # noqa: E402
+from theme import WINDOW_BG  # noqa: E402
 from theme_manager import RootBackground  # noqa: E402
 from theme_presets import DEFAULT_PRESET_ID  # noqa: E402
 
@@ -45,18 +45,14 @@ def main() -> None:
     root = ctk.CTk()
     root.title("Gradient shell test — color washes should fill window")
     root.geometry("800x600")
-    root.configure(fg_color="transparent")
+    root.configure(fg_color=WINDOW_BG)
 
     bg = RootBackground(root, preset_id=DEFAULT_PRESET_ID)
-
-    shell = ctk.CTkFrame(root, fg_color="transparent", corner_radius=0)
-    shell.place(x=0, y=0, relwidth=1, relheight=1)
+    shell = bg.shell
     shell.grid_columnconfigure(1, weight=1)
     shell.grid_rowconfigure(0, weight=1)
 
-    sidebar = ctk.CTkFrame(
-        shell, width=180, fg_color=APP_SIDEBAR, border_width=1, border_color=APP_BORDER, corner_radius=0,
-    )
+    sidebar = ctk.CTkFrame(shell, width=180, fg_color="transparent", corner_radius=0)
     sidebar.grid(row=0, column=0, sticky="ns")
     sidebar.grid_propagate(False)
     ctk.CTkLabel(sidebar, text="Sidebar", font=ctk.CTkFont(size=14, weight="bold")).pack(pady=24, padx=16)
@@ -69,19 +65,16 @@ def main() -> None:
     ctk.CTkLabel(card.body, text="Gradient test", font=ctk.CTkFont(size=20, weight="bold")).pack(anchor="w")
     ctk.CTkLabel(
         card.body,
-        text="Margins and sidebar must show subtle purple/teal/cyan washes\nthrough dark glass — not flat charcoal.",
+        text="Sidebar + margins must show color washes — not flat charcoal.",
         justify="left",
     ).pack(anchor="w", pady=(8, 0))
 
-    status = ctk.CTkFrame(
-        shell, height=28, fg_color=STATUS_BAR_BG, border_width=1, border_color=APP_BORDER, corner_radius=0,
-    )
+    status = ctk.CTkFrame(shell, height=28, fg_color="transparent", corner_radius=0)
     status.grid(row=1, column=0, columnspan=2, sticky="ew")
-    ctk.CTkLabel(status, text="Status bar glass", font=ctk.CTkFont(size=11)).pack(side="left", padx=12)
+    ctk.CTkLabel(status, text="Status bar over gradient", font=ctk.CTkFont(size=11)).pack(side="left", padx=12)
 
-    bg.send_to_back()
     root.after(100, bg._on_configure)
-    print("PASS: window opened — verify subtle color washes visually.")
+    print("PASS: window opened — verify color washes in sidebar and margins.")
     root.mainloop()
 
 
