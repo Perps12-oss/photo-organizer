@@ -266,14 +266,13 @@ class Gallery3DView(ctk.CTkFrame):
                     photos_data.append(f'data:image/jpeg;base64,{b64}')
             except: pass
             
-        # Embed data in HTML template (items built outside f-string: py3.11
-        # cannot put backslashes in f-string expressions)
-        n = max(len(photos_data), 1)
-        items_html = "".join(
-            '<div class="item" style="transform: rotateY(%sdeg) translateZ(400px); background-image: url(\'%s\');"></div>'
-            % (i * (360 / n), d)
-            for i, d in enumerate(photos_data)
-        )
+        # Embed data in HTML template (items built outside f-string to avoid backslash-in-expression on py3.11)
+        items = []
+        n = len(photos_data) or 1
+        for i, d in enumerate(photos_data):
+            items.append(
+                f'<div class="item" style="transform: rotateY({i * (360 / n)}deg) translateZ(400px); background-image: url(\'{d}\');"></div>'
+            )
         return f"""
         <!DOCTYPE html><html><head><style>
             body {{ background: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }}
@@ -282,7 +281,7 @@ class Gallery3DView(ctk.CTkFrame):
             .item {{ position: absolute; width: 300px; height: 400px; background-size: cover; border: 2px solid #00ffcc; box-shadow: 0 0 20px #00ffcc; }}
         </style></head><body>
         <div class="carousel">
-            {items_html}
+            {"".join(items)}
         </div></body></html>
         """
 
@@ -463,23 +462,22 @@ class DuplicateView(ctk.CTkFrame):
             self.files_to_delete.discard(path)
             for w in self.gallery_frame.winfo_children():
                 if hasattr(w, 'path') and w.path == path:
-                    w.configure(border_color="transparent")
+                    w.configure(border_color=GLASS_COLORS['dark'])
 
     def select_smart(self, mode):
-        widgets = [w for w in self.gallery_frame.winfo_children() if hasattr(w, 'path')]
-        if not widgets: return
-        
-        keep_path = None
-        if mode == "smart":
-            keep_path = max(widgets, key=lambda w: self.image_scores[w.path]).path
-        elif mode == "newest":
-            keep_path = max(widgets, key=lambda w: os.path.getmtime(w.path)).path
-        elif mode == "oldest":
-            keep_path = min(widgets, key=lambda w: os.path.getmtime(w.path)).path
-            
-        for w in widgets:
-            w.var.set(w.path != keep_path)
-            self._toggle_del(w.path, w.var)
+        # Simplified smart select
+        for paths in self.current_duplicates.values():
+            if not paths: continue
+            if mode == "smart":
+                best = max(paths, key=lambda p: self.image_scores.get(p, 0))
+            elif mode == "newest":
+                best = max(paths, key=lambda p: os.path.getmtime(p))
+            else:
+                best = min(paths, key=lambda p: os.path.getmtime(p))
+            for p in paths:
+                if p != best:
+                    self.files_to_delete.add(p)
+        self.del_btn.configure(state="normal")
 
     def confirm_del(self):
         if not self.files_to_delete: return
@@ -487,113 +485,75 @@ class DuplicateView(ctk.CTkFrame):
             for p in list(self.files_to_delete):
                 try: os.remove(p)
                 except: pass
-            messagebox.showinfo("Done", "Files deleted.")
-            # Reload current view or list
-            for w in self.gallery_frame.winfo_children(): w.destroy()
+            self.files_to_delete.clear()
+            messagebox.showinfo("Done", "Deleted selected files")
 
+# --- SORT VIEW ---
 class SortView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
-        
         top = ctk.CTkFrame(self, fg_color=GLASS_COLORS['dark'], corner_radius=10)
         top.pack(fill="x", padx=20, pady=20)
-        
-        self.src = ctk.StringVar()
-        self.dst = ctk.StringVar(value=os.path.expanduser("~/Photos/Organized"))
-        
-        ctk.CTkButton(top, text="📂 Source", command=lambda: self.src.set(filedialog.askdirectory())).pack(side="left", padx=10)
-        ctk.CTkLabel(top, textvariable=self.src).pack(side="left", padx=10)
-        
-        ctk.CTkButton(top, text="📂 Dest", command=lambda: self.dst.set(filedialog.askdirectory())).pack(side="left", padx=10)
-        ctk.CTkLabel(top, textvariable=self.dst).pack(side="left", padx=10)
-        
-        ctk.CTkButton(top, text="Start Sorting", fg_color=GLASS_COLORS['secondary'], command=self.start_sort).pack(side="right", padx=20)
+        self.path_var = ctk.StringVar()
+        ctk.CTkEntry(top, textvariable=self.path_var).pack(side="left", fill="x", expand=True, padx=10)
+        ctk.CTkButton(top, text="Browse", command=self.browse).pack(side="left")
+        ctk.CTkButton(top, text="Organize by Date", command=self.organize, fg_color=GLASS_COLORS['primary']).pack(side="left", padx=5)
 
-    def start_sort(self):
-        src, dst = self.src.get(), self.dst.get()
-        if not src or not dst: return
-        if not messagebox.askyesno("Confirm", "Move files to organized folders?"): return
-        
-        def worker():
-            count = 0
-            for root, _, files in os.walk(src):
-                for f in files:
-                    if f.lower().endswith(SUPPORTED_EXTENSIONS):
-                        p = os.path.join(root, f)
-                        try:
-                            mtime = os.path.getmtime(p)
-                            folder = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m")
-                            target = os.path.join(dst, folder)
-                            os.makedirs(target, exist_ok=True)
-                            shutil.move(p, os.path.join(target, f))
-                            count += 1
-                        except: pass
-            messagebox.showinfo("Done", f"Moved {count} files.")
-        
-        threading.Thread(target=worker).start()
+    def browse(self):
+        p = filedialog.askdirectory()
+        if p: self.path_var.set(p)
 
-class SettingsView(ctk.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent, fg_color="transparent")
-        ctk.CTkLabel(self, text="Settings", font=("Arial", 24)).pack(pady=20)
-        ctk.CTkLabel(self, text="Application Theme: Dark Blue (Pro)").pack()
-        ctk.CTkLabel(self, text="Version: Hybrid Ultimate 1.0").pack()
+    def organize(self):
+        path = self.path_var.get()
+        if not path: return
+        # Simple organize
+        for root, _, files in os.walk(path):
+            for f in files:
+                if f.lower().endswith(SUPPORTED_EXTENSIONS):
+                    fp = os.path.join(root, f)
+                    try:
+                        mtime = os.path.getmtime(fp)
+                        dt = datetime.datetime.fromtimestamp(mtime)
+                        dest_dir = os.path.join(path, f"{dt.year}", f"{dt.month:02d}")
+                        os.makedirs(dest_dir, exist_ok=True)
+                        shutil.move(fp, os.path.join(dest_dir, f))
+                    except: pass
+        messagebox.showinfo("Done", "Organized by date")
 
 # --- MAIN APP ---
 class PhotoOrganizerHybrid(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Photo Organizer Ultimate")
-        self.geometry("1400x900")
-        
-        # Grid Layout
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        self.title("Photo Manager Pro")
+        self.geometry("1200x800")
+        self.configure(fg_color=GLASS_COLORS['darker'])
         
         # Sidebar
         self.sidebar = ModernSidebar(self, self.navigate_to)
-        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.sidebar.pack(side="left", fill="y")
         
-        # Content Area
-        self.content = ctk.CTkFrame(self, fg_color="transparent")
-        self.content.grid(row=0, column=1, sticky="nsew")
-        self.content.grid_rowconfigure(0, weight=1)
-        self.content.grid_columnconfigure(0, weight=1)
+        # Main content area
+        self.main = ctk.CTkFrame(self, fg_color="transparent")
+        self.main.pack(side="right", fill="both", expand=True)
         
-        # Initialize Views
         self.views = {
-            'dashboard': DashboardView(self.content),
-            'gallery': Gallery3DView(self.content),
-            'duplicates': DuplicateView(self.content),
-            'sort': SortView(self.content),
-            'settings': SettingsView(self.content)
+            "dashboard": DashboardView(self.main),
+            "gallery": Gallery3DView(self.main),
+            "duplicates": DuplicateView(self.main),
+            "sort": SortView(self.main),
         }
+        for v in self.views.values():
+            v.pack_forget()
+        self.navigate_to("dashboard")
         
-        # Start
-        self.navigate_to('dashboard')
-        
-        # Check for drag-drop args after UI loads
-        self.after(100, self.handle_startup_args)
+        # Drag drop support stub
+        self.bind("<Button-1>", lambda e: None)
 
-    def navigate_to(self, view_name):
-        for v in self.views.values(): v.grid_forget()
-        self.views[view_name].grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-
-    def handle_startup_args(self):
-        if len(sys.argv) > 1:
-            path = sys.argv[1].strip('"').strip("'")
-            if os.path.exists(path):
-                if os.path.isdir(path):
-                    self.navigate_to('dashboard')
-                    self.views['dashboard'].update_stats(path)
-                    # Auto-scan
-                    self.navigate_to('duplicates')
-                    self.views['duplicates'].set_path_scan(path)
-                else:
-                    # If file, take its folder
-                    folder = os.path.dirname(path)
-                    self.navigate_to('duplicates')
-                    self.views['duplicates'].set_path_scan(folder)
+    def navigate_to(self, name):
+        for v in self.views.values():
+            v.pack_forget()
+        if name in self.views:
+            self.views[name].pack(fill="both", expand=True)
 
 if __name__ == "__main__":
     app = PhotoOrganizerHybrid()
