@@ -33,7 +33,7 @@ def quick_hash(filepath: str, bytes_to_read: int = QUICK_HASH_BYTES) -> Optional
             return None
         if HAS_XXHASH:
             return xxhash.xxh64(chunk).hexdigest()
-        return hashlib.md5(chunk).hexdigest()
+        return hashlib.md5(chunk, usedforsecurity=False).hexdigest()
     except OSError as e:
         if e.errno != 22:
             logger.debug("quick_hash failed for %s: %s", path, e)
@@ -47,9 +47,7 @@ def full_hash(filepath: str) -> Optional[str]:
     """Full-file hash — only for quick-hash collision groups."""
     path = normalize_filepath(filepath)
     try:
-        if HAS_XXHASH:
-            return xxhash.xxh64_file(path).hexdigest()
-        hasher = hashlib.md5()
+        hasher = xxhash.xxh64() if HAS_XXHASH else hashlib.md5(usedforsecurity=False)
         for chunk in iter_file_chunks(path, HASH_CHUNK):
             hasher.update(chunk)
         return hasher.hexdigest()
